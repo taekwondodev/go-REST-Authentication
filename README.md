@@ -3,10 +3,15 @@ This is a Template for REST API with authentication already implemented in go.
 
 ## Architecture
 
-foto...
+![Image](https://github.com/user-attachments/assets/07687a2b-9003-4976-94ba-b5feaf0504fd)
 
 ## Authentication with JWT
 
+The endpoints can be protected by the AuthMiddleware like for the refresh token endpoint. The AuthMiddleware check if the token received from the client is valid or not. The middleware is already implemented
+
+## Database
+
+I use postgreSQL for the project. It contains a table for the user.
 
 ## Usage
 
