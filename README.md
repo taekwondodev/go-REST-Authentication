@@ -5,6 +5,9 @@ This is a Template for REST API with authentication already implemented in go.
 
 foto...
 
+## Authentication with JWT
+
+
 ## Usage
 
 1. Download the zip project
