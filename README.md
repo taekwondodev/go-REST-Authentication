@@ -3,7 +3,7 @@ This is a Template for REST API with authentication already implemented in go.
 
 ## Architecture
 
-![Image](https://github.com/user-attachments/assets/07687a2b-9003-4976-94ba-b5feaf0504fd)
+![Image](https://github.com/user-attachments/assets/1e62b6f7-371c-4dba-9f8c-b65c5ef8ecfc)
 
 ## Authentication with JWT
 
