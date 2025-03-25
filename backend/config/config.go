@@ -14,8 +14,8 @@ func LoadEnv() {
 		log.Fatal("JWT_SECRET non definito")
 	}
 
-	DbURL = os.Getenv("DATABASE_URL")
+	DbURL = os.Getenv("POSTGRES_URL")
 	if DbURL == "" {
-		log.Fatal("DATABASE_URL non definito")
+		log.Fatal("POSTGRES_URL non definito")
 	}
 }
