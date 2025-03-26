@@ -14,5 +14,5 @@ func (a *AuthRequest) Validate() error {
 
 type AuthResponse struct {
 	Message string `json:"message"`
-	Token   string `json:"token,omitempty"` // Il token sarà presente solo in caso di successo
+	Token   string `json:"token,omitempty"` // The token will be omitted if the request is a registration
 }

@@ -6,10 +6,9 @@ This is a Template for REST API with authentication already implemented in go an
 ```
 go-REST-template/
 ├── backend/
-│   ├── config/          # Application configuration (es. JWT, environment variables)
+│   ├── config/          # Application configuration (JWT, Database, Environment Variables)
 │   ├── controller/      # Handle HTTP Requests
-│   ├── database/        # Database Configuration
-│   ├── dto/             # Data Transfer Objects (request and response)
+│   ├── dto/             # Data Transfer Objects (Request and Response)
 │   ├── middleware/      # Middleware
 │   ├── repository/      # Handle Database Interaction
 │   ├── service/         # Handle Controller Business Logic

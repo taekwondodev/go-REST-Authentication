@@ -1,7 +1,6 @@
-package database
+package config
 
 import (
-	"backend/config"
 	"database/sql"
 	"log"
 
@@ -13,7 +12,7 @@ var Db *sql.DB
 func InitDB() {
 	var err error
 
-	Db, err = sql.Open("postgres", config.DbURL)
+	Db, err = sql.Open("postgres", DbURL)
 	if err != nil {
 		log.Fatal("Errore connessione al database: ", err)
 	}
