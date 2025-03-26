@@ -1,9 +1,24 @@
 # go-REST-Template
-This is a Template for REST API with authentication already implemented in go.
+This is a Template for REST API with authentication already implemented in go and connected to a SQL database.
 
-## Architecture
+## Project Structure
 
-![Image](https://github.com/user-attachments/assets/1e62b6f7-371c-4dba-9f8c-b65c5ef8ecfc)
+```
+go-REST-template/
+├── backend/
+│   ├── config/          # Application configuration (es. JWT, environment variables)
+│   ├── controller/      # Handle HTTP Requests
+│   ├── database/        # Database Configuration
+│   ├── dto/             # Data Transfer Objects (request and response)
+│   ├── middleware/      # Middleware
+│   ├── repository/      # Handle Database Interaction
+│   ├── service/         # Handle Controller Business Logic
+│   ├── Dockerfile       
+│   ├── go.mod           
+│   ├── go.sum           
+│   ├── main.go         
+├── docker-compose.yml   
+```
 
 ## Authentication with JWT
 
@@ -12,6 +27,11 @@ The endpoints can be protected by the AuthMiddleware like for the refresh token 
 ## Database
 
 I use postgreSQL for the project. It contains a table for the user.
+
+## Requirements
+
+-[Go](https://go.dev/dl/)
+-[Docker](https://docs.docker.com/engine/install/)
 
 ## Usage
 
