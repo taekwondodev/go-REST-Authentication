@@ -33,15 +33,17 @@ I use postgreSQL for the project. At the start of your container instance will r
 
 ## Requirements
 
--Install [Docker](https://docs.docker.com/engine/install/)
+- Install [Docker](https://docs.docker.com/engine/install/)
 
 ## Usage
 
 1. Clone the project:
+   
    ```bash
    git clone https://github.com/taekwondodev/go-REST-Template.git
    ```
 3. Create a file ".env" in the main directory and insert the value of your instances:
+   
    ```txt
    JWT_SECRET=default
    POSTGRES_URL=default
@@ -49,7 +51,8 @@ I use postgreSQL for the project. At the start of your container instance will r
    POSTGRES_PASSWORD=postgres
    POSTGRES_DB=postgres
    ```
-4. Open the terminal in the main directory and run the code:
+5. Open the terminal in the main directory and run the code:
+   
    ```bash
    docker compose up -d
    ```
