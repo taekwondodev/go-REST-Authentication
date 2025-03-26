@@ -30,8 +30,9 @@ I use postgreSQL for the project. It contains a table for the user.
 
 ## Requirements
 
--[Go](https://go.dev/dl/)
--[Docker](https://docs.docker.com/engine/install/)
+-Install [Go](https://go.dev/dl/)
+
+-Install [Docker](https://docs.docker.com/engine/install/)
 
 ## Usage
 
