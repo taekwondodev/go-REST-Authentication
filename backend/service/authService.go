@@ -4,7 +4,6 @@ import (
 	"backend/config"
 	"backend/dto"
 	"backend/repository"
-	"errors"
 )
 
 type AuthService struct {
@@ -18,14 +17,14 @@ func NewAuthService(repo *repository.UserRepository) *AuthService {
 func (s *AuthService) Register(req dto.AuthRequest) (*dto.AuthResponse, error) {
 	checkReqIsValid(req)
 
-	exists := s.repo.CheckUserExist(req.Username)
-	if exists {
-		return nil, errors.New("username già in uso")
+	err := s.repo.CheckUsernameExist(req.Username)
+	if err != nil {
+		return nil, err
 	}
 
-	err := s.repo.SaveUser(req.Username, req.Password)
+	err = s.repo.SaveUser(req.Username, req.Password)
 	if err != nil {
-		return nil, errors.New("errore salvataggio utente")
+		return nil, err
 	}
 
 	return &dto.AuthResponse{Message: "Registrazione avvenuta con successo"}, nil
@@ -34,22 +33,45 @@ func (s *AuthService) Register(req dto.AuthRequest) (*dto.AuthResponse, error) {
 func (s *AuthService) Login(req dto.AuthRequest) (*dto.AuthResponse, error) {
 	checkReqIsValid(req)
 
-	exists := s.repo.CheckUserExist(req.Username)
-	if !exists {
-		return nil, errors.New("username non esiste")
-	}
-
-	token, err := config.GenerateJWT(req.Username)
+	err := s.repo.CheckUserExist(req.Username, req.Password)
 	if err != nil {
-		return nil, errors.New("errore generazione token")
+		return nil, err
 	}
 
-	return &dto.AuthResponse{Message: "Login avvenuto con successo!", Token: token}, nil
+	accessToken, refreshToken, err := config.GenerateJWT(req.Username)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.AuthResponse{
+		Message:      "Login avvenuto con successo!",
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken}, nil
+}
+
+func (s *AuthService) Refresh(req dto.RefreshTokenRequest) (*dto.AuthResponse, error) {
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
+	claims, err := config.ValidateJWT(req.RefreshToken)
+	if err != nil {
+		return nil, err
+	}
+
+	accessToken, _, err := config.GenerateJWT(claims.Username)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.AuthResponse{
+		Message:     "Token aggiornato con successo!",
+		AccessToken: accessToken}, nil
 }
 
 func checkReqIsValid(req dto.AuthRequest) error {
 	if err := req.Validate(); err != nil {
-		return errors.New("username e password sono obbligatori")
+		return err
 	}
 	return nil
 }

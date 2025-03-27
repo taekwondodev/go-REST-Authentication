@@ -11,8 +11,9 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func GenerateJWT(username string) (string, error) {
-	claims := Claims{
+func GenerateJWT(username string) (string, string, error) {
+	// Valid for 24 hours
+	accessClaims := Claims{
 		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
@@ -20,15 +21,26 @@ func GenerateJWT(username string) (string, error) {
 		},
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	tokenString, err := token.SignedString(JwtSecret)
-
-	if err != nil {
-		return "", err
+	// Valid for 7 days
+	refreshClaims := Claims{
+		Username: username,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
 	}
 
-	return tokenString, nil
+	accessToken, err := generateToken(accessClaims)
+	if err != nil {
+		return "", "", err
+	}
+
+	refreshToken, err := generateToken(refreshClaims)
+	if err != nil {
+		return "", "", err
+	}
+
+	return accessToken, refreshToken, nil
 }
 
 func ValidateJWT(tokenString string) (*Claims, error) {
@@ -41,10 +53,21 @@ func ValidateJWT(tokenString string) (*Claims, error) {
 	return claims, nil
 }
 
+func generateToken(claims Claims) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	tokenString, err := token.SignedString(JwtSecret)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
+}
+
 func parseJWT(tokenString string) (*jwt.Token, *Claims, error) {
 	claims := &Claims{}
 
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (any, error) {
 		return JwtSecret, nil
 	})
 

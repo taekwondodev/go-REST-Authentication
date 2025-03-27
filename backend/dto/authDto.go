@@ -13,6 +13,16 @@ func (a *AuthRequest) Validate() error {
 }
 
 type AuthResponse struct {
-	Message string `json:"message"`
-	Token   string `json:"token,omitempty"` // The token will be omitted if the request is a registration
+	Message      string `json:"message"`
+	AccessToken  string `json:"accessToken,omitzero"`
+	RefreshToken string `json:"refreshToken,omitzero"`
+}
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refreshToken" validate:"required"`
+}
+
+func (r *RefreshTokenRequest) Validate() error {
+	validate := validator.New()
+	return validate.Struct(r)
 }
