@@ -14,14 +14,14 @@ func InitDB() {
 
 	Db, err = sql.Open("postgres", DbURL)
 	if err != nil {
-		log.Fatal("Errore connessione al database: ", err)
+		log.Fatal("Error connection to database: ", err)
 	}
 
 	if err = Db.Ping(); err != nil {
-		log.Fatal("Errore nel ping del database:", err)
+		log.Fatal("Error ping to database:", err)
 	}
 
-	log.Println("Connessione al database riuscita!")
+	log.Println("Connection to database successfully!")
 }
 
 func CloseDB() {
@@ -30,5 +30,5 @@ func CloseDB() {
 	}
 
 	Db.Close()
-	log.Println("Connessione al database chiusa!")
+	log.Println("Connection to database closed!")
 }

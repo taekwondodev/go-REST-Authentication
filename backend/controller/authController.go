@@ -20,7 +20,7 @@ func (c *AuthController) Register(w http.ResponseWriter, r *http.Request) {
 
 	var req dto.AuthRequest
 
-	checkReqIsValid(w, r, req)
+	checkReqIsValid(w, r, &req)
 
 	res, err := c.authService.Register(req)
 	if err != nil {
@@ -37,7 +37,7 @@ func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 
 	var req dto.AuthRequest
 
-	checkReqIsValid(w, r, req)
+	checkReqIsValid(w, r, &req)
 
 	res, err := c.authService.Login(req)
 	if err != nil {
@@ -72,15 +72,15 @@ func (c *AuthController) Refresh(w http.ResponseWriter, r *http.Request) {
 
 func checkPostMethod(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Metodo non consentito", http.StatusMethodNotAllowed)
+		http.Error(w, "Http Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 }
 
-func checkReqIsValid(w http.ResponseWriter, r *http.Request, req dto.AuthRequest) {
+func checkReqIsValid(w http.ResponseWriter, r *http.Request, req *dto.AuthRequest) {
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, "Request non valida", http.StatusBadRequest)
+		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
 }

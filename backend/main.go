@@ -21,7 +21,7 @@ func main() {
 
 	setupPublicRoutes(authController)
 
-	log.Println("Server in ascolto sulla porta 8080...")
+	log.Println("Server listening on the port 8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 

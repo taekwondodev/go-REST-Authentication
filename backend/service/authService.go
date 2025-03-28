@@ -15,7 +15,9 @@ func NewAuthService(repo repository.UserRepository) *AuthService {
 }
 
 func (s *AuthService) Register(req dto.AuthRequest) (*dto.AuthResponse, error) {
-	checkReqIsValid(req)
+	if err := checkReqIsValid(req); err != nil {
+		return nil, err
+	}
 
 	err := s.repo.CheckUsernameExist(req.Username)
 	if err != nil {
@@ -27,24 +29,27 @@ func (s *AuthService) Register(req dto.AuthRequest) (*dto.AuthResponse, error) {
 		return nil, err
 	}
 
-	return &dto.AuthResponse{Message: "Registrazione avvenuta con successo"}, nil
+	return &dto.AuthResponse{Message: "Sign-Up successfully!"}, nil
 }
 
 func (s *AuthService) Login(req dto.AuthRequest) (*dto.AuthResponse, error) {
-	checkReqIsValid(req)
+	if err := checkReqIsValid(req); err != nil {
+		return nil, err
+	}
 
 	err := s.repo.CheckUserExist(req.Username, req.Password)
 	if err != nil {
 		return nil, err
 	}
 
-	accessToken, refreshToken, err := config.GenerateJWT(req.Username)
+	jwt := config.JWT{}
+	accessToken, refreshToken, err := jwt.GenerateJWT(req.Username)
 	if err != nil {
 		return nil, err
 	}
 
 	return &dto.AuthResponse{
-		Message:      "Login avvenuto con successo!",
+		Message:      "Sign-In successfully!",
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken}, nil
 }
@@ -54,18 +59,19 @@ func (s *AuthService) Refresh(req dto.RefreshTokenRequest) (*dto.AuthResponse, e
 		return nil, err
 	}
 
-	claims, err := config.ValidateJWT(req.RefreshToken)
+	jwt := config.JWT{}
+	claims, err := jwt.ValidateJWT(req.RefreshToken)
 	if err != nil {
 		return nil, err
 	}
 
-	accessToken, _, err := config.GenerateJWT(claims.Username)
+	accessToken, _, err := jwt.GenerateJWT(claims.Username)
 	if err != nil {
 		return nil, err
 	}
 
 	return &dto.AuthResponse{
-		Message:     "Token aggiornato con successo!",
+		Message:     "Update token successfully!",
 		AccessToken: accessToken}, nil
 }
 

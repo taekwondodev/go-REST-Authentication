@@ -10,8 +10,14 @@ type Claims struct {
 	Username string `json:"username"`
 	jwt.RegisteredClaims
 }
+type Token interface {
+	GenerateJWT(username string) (string, string, error)
+	ValidateJWT(tokenString string) (*Claims, error)
+}
 
-func GenerateJWT(username string) (string, string, error) {
+type JWT struct{}
+
+func (j *JWT) GenerateJWT(username string) (string, string, error) {
 	// Valid for 24 hours
 	accessClaims := Claims{
 		Username: username,
@@ -43,7 +49,7 @@ func GenerateJWT(username string) (string, string, error) {
 	return accessToken, refreshToken, nil
 }
 
-func ValidateJWT(tokenString string) (*Claims, error) {
+func (j *JWT) ValidateJWT(tokenString string) (*Claims, error) {
 	token, claims, err := parseJWT(tokenString)
 
 	if err != nil || !token.Valid {
