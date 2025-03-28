@@ -84,7 +84,6 @@ func TestAuthServiceRegisterInvalidRequest(t *testing.T) {
 
 	assert.Nil(t, res)
 	assert.Error(t, err)
-	mockRepo.AssertExpectations(t)
 }
 
 func TestAuthServiceRegisterUserAlreadyExists(t *testing.T) {
@@ -164,7 +163,6 @@ func TestAuthServiceLoginInvalidRequest(t *testing.T) {
 
 	assert.Nil(t, res)
 	assert.Error(t, err)
-	mockRepo.AssertExpectations(t)
 }
 
 func TestAuthServiceLoginUserNotExists(t *testing.T) {
@@ -228,7 +226,7 @@ func TestAuthServiceRefreshCorrect(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "Update token successfully!", res.Message)
 	assert.Equal(t, accessToken, res.AccessToken)
-	mockRepo.AssertExpectations(t)
+	MockToken.AssertExpectations(t)
 }
 
 func TestAuthServiceRefreshInvalidRequest(t *testing.T) {
@@ -243,7 +241,6 @@ func TestAuthServiceRefreshInvalidRequest(t *testing.T) {
 
 	assert.Nil(t, res)
 	assert.Error(t, err)
-	mockRepo.AssertExpectations(t)
 }
 
 func TestAuthServiceRefreshInvalidToken(t *testing.T) {
@@ -263,7 +260,7 @@ func TestAuthServiceRefreshInvalidToken(t *testing.T) {
 	assert.Nil(t, res)
 	assert.Error(t, err)
 	assert.Equal(t, "token non valido", err.Error())
-	mockRepo.AssertExpectations(t)
+	mockToken.AssertExpectations(t)
 }
 
 func TestAuthServiceRefreshErrorGenerate(t *testing.T) {
@@ -285,5 +282,5 @@ func TestAuthServiceRefreshErrorGenerate(t *testing.T) {
 	assert.Nil(t, res)
 	assert.Error(t, err)
 	assert.Equal(t, errorTokenString, err.Error())
-	mockRepo.AssertExpectations(t)
+	mockToken.AssertExpectations(t)
 }

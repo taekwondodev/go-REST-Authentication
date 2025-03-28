@@ -53,6 +53,8 @@ func TestCheckUsernameExistDbError(t *testing.T) {
 	assert.Error(t, err)
 }
 
+/****************************************************************/
+
 func TestSaveUserCorrect(t *testing.T) {
 	db, mock, _ := sqlmock.New()
 	defer db.Close()
@@ -94,6 +96,8 @@ func TestSaveUserDbError(t *testing.T) {
 	err := repo.SaveUser(username, password)
 	assert.Error(t, err)
 }
+
+/****************************************************************/
 
 func TestCheckUserExistCorrect(t *testing.T) {
 	db, mock, _ := sqlmock.New()

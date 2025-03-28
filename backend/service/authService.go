@@ -6,15 +6,21 @@ import (
 	"backend/repository"
 )
 
-type AuthService struct {
+type AuthService interface {
+	Register(req dto.AuthRequest) (*dto.AuthResponse, error)
+	Login(req dto.AuthRequest) (*dto.AuthResponse, error)
+	Refresh(req dto.RefreshTokenRequest) (*dto.AuthResponse, error)
+}
+
+type AuthServiceImpl struct {
 	repo repository.UserRepository
 }
 
-func NewAuthService(repo repository.UserRepository) *AuthService {
-	return &AuthService{repo: repo}
+func NewAuthService(repo repository.UserRepository) AuthService {
+	return &AuthServiceImpl{repo: repo}
 }
 
-func (s *AuthService) Register(req dto.AuthRequest) (*dto.AuthResponse, error) {
+func (s *AuthServiceImpl) Register(req dto.AuthRequest) (*dto.AuthResponse, error) {
 	if err := checkReqIsValid(req); err != nil {
 		return nil, err
 	}
@@ -32,7 +38,7 @@ func (s *AuthService) Register(req dto.AuthRequest) (*dto.AuthResponse, error) {
 	return &dto.AuthResponse{Message: "Sign-Up successfully!"}, nil
 }
 
-func (s *AuthService) Login(req dto.AuthRequest) (*dto.AuthResponse, error) {
+func (s *AuthServiceImpl) Login(req dto.AuthRequest) (*dto.AuthResponse, error) {
 	if err := checkReqIsValid(req); err != nil {
 		return nil, err
 	}
@@ -54,7 +60,7 @@ func (s *AuthService) Login(req dto.AuthRequest) (*dto.AuthResponse, error) {
 		RefreshToken: refreshToken}, nil
 }
 
-func (s *AuthService) Refresh(req dto.RefreshTokenRequest) (*dto.AuthResponse, error) {
+func (s *AuthServiceImpl) Refresh(req dto.RefreshTokenRequest) (*dto.AuthResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -76,8 +82,5 @@ func (s *AuthService) Refresh(req dto.RefreshTokenRequest) (*dto.AuthResponse, e
 }
 
 func checkReqIsValid(req dto.AuthRequest) error {
-	if err := req.Validate(); err != nil {
-		return err
-	}
-	return nil
+	return req.Validate()
 }

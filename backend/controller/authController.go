@@ -8,19 +8,23 @@ import (
 )
 
 type AuthController struct {
-	authService *service.AuthService
+	authService service.AuthService
 }
 
-func NewAuthController(authService *service.AuthService) *AuthController {
+func NewAuthController(authService service.AuthService) *AuthController {
 	return &AuthController{authService: authService}
 }
 
 func (c *AuthController) Register(w http.ResponseWriter, r *http.Request) {
-	checkPostMethod(w, r)
+	if !checkPostMethod(w, r) {
+		return
+	}
 
 	var req dto.AuthRequest
 
-	checkReqIsValid(w, r, &req)
+	if !checkReqIsValid(w, r, &req) {
+		return
+	}
 
 	res, err := c.authService.Register(req)
 	if err != nil {
@@ -33,11 +37,15 @@ func (c *AuthController) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
-	checkPostMethod(w, r)
+	if !checkPostMethod(w, r) {
+		return
+	}
 
 	var req dto.AuthRequest
 
-	checkReqIsValid(w, r, &req)
+	if !checkReqIsValid(w, r, &req) {
+		return
+	}
 
 	res, err := c.authService.Login(req)
 	if err != nil {
@@ -50,7 +58,9 @@ func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *AuthController) Refresh(w http.ResponseWriter, r *http.Request) {
-	checkPostMethod(w, r)
+	if !checkPostMethod(w, r) {
+		return
+	}
 
 	var req dto.RefreshTokenRequest
 
@@ -70,17 +80,21 @@ func (c *AuthController) Refresh(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-func checkPostMethod(w http.ResponseWriter, r *http.Request) {
+func checkPostMethod(w http.ResponseWriter, r *http.Request) bool {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Http Method not allowed", http.StatusMethodNotAllowed)
-		return
+		return false
 	}
+
+	return true
 }
 
-func checkReqIsValid(w http.ResponseWriter, r *http.Request, req *dto.AuthRequest) {
-	err := json.NewDecoder(r.Body).Decode(&req)
+func checkReqIsValid(w http.ResponseWriter, r *http.Request, req *dto.AuthRequest) bool {
+	err := json.NewDecoder(r.Body).Decode(req)
 	if err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
+		return false
 	}
+
+	return true
 }
