@@ -11,6 +11,14 @@ services:
       - JWT_SECRET=${JWT_SECRET}
     depends_on:
       - postgres
+
+  test:
+    build:
+      context: ./backend/test
+      dockerfile: Dockerfile
+    container_name: test
+    profiles:
+      - run-tests   
   
   postgres:
     image: postgres:latest
