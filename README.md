@@ -2,8 +2,8 @@
 This is a Template for REST API in Go with JWT, Docker and a Database.
 
 You can use it in two ways:
-- **Authentication Microservice**
-- **Starting point for a backend**
+- **Authentication Microservice** (here)
+- **Starting point for a backend** [click here](https://github.com/taekwondodev/go-REST-Template/tree/backend)
 
 ## Project Structure
 
@@ -13,9 +13,9 @@ go-REST-template/
 │   ├── config/          # Application configuration (JWT, Database, Environment Variables)
 │   ├── controller/      # Handle HTTP Requests
 │   ├── dto/             # Data Transfer Objects (Request and Response)
-│   ├── middleware/      # Middleware
 │   ├── repository/      # Handle Database Interaction
 │   ├── service/         # Handle Controller Business Logic
+│   ├── test/            # Unit Testing
 │   ├── Dockerfile       
 │   ├── go.mod           
 │   ├── go.sum           
@@ -25,11 +25,17 @@ go-REST-template/
 
 ## Authentication with JWT
 
-The endpoints can be protected by the AuthMiddleware like for the refresh token endpoint. The AuthMiddleware check if the token received from the client is valid or not. The middleware is already implemented
+When an user sign in, the server respond with a message, an access token and a refresh token. The access token expires in 1 hour, the refresh token expires in 7 days.
+
+If the access token is expired, there is the refresh endpoint to get a new access token.
 
 ## Database
 
-I use postgreSQL for the project. At the start of your container instance will run the init script. It contains a table for the user.
+I use postgreSQL for the project. At the start of your container instance will run the init script. It contains a table for the user with username and password as attribute.
+
+## Docker
+
+I use docker to manage dependencies. I divided the project into 3 containers: backend, test, postgres. So every container will run indipendently from the other two.
 
 ## Requirements
 
@@ -51,15 +57,19 @@ I use postgreSQL for the project. At the start of your container instance will r
    POSTGRES_PASSWORD=postgres
    POSTGRES_DB=postgres
    ```
-5. Open the terminal in the main directory and run the code:
+5. Open the terminal in the main directory and run the command:
    
    ```bash
    docker compose up -d
    ```
 
-## Contributions
+## Testing
 
-If you find any bugs or have suggestions for improvements, feel free to open an issue or submit a pull request!
+To test the repository with automated test run the command in the main directory:
+
+```bash
+docker compose --profile run-tests up
+```
 
 ## Acknowledgments
 
