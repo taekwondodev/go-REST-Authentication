@@ -33,7 +33,7 @@ If the access token is expired, there is the refresh endpoint to get a new acces
 
 I use postgreSQL for the project. At the start of your container instance will run the init script. It contains a table for the user with username and password as attribute.
 
-## Docker
+## Docker
 
 I use docker to manage dependencies. I divided the project into 3 containers: backend, test, postgres. So every container will run indipendently from the other two.
 
