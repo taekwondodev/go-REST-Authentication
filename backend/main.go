@@ -30,12 +30,3 @@ func setupPublicRoutes(authController *controller.AuthController) {
 	http.HandleFunc("/login", authController.Login)
 	http.HandleFunc("/refresh", authController.Refresh)
 }
-
-/*
-func setupProtectedRoutes() {
-	http.HandleFunc("/profile", middleware.AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
-		username := r.Header.Get("Username")
-		w.Write([]byte("Benvenuto " + username))
-	}))
-}
-*/
