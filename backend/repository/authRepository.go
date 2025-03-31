@@ -22,7 +22,7 @@ func NewUserRepository(db *sql.DB) UserRepository {
 
 func (r *UserRepositoryImpl) CheckUsernameExist(username string) error {
 	var exists bool
-	return r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM User WHERE username=$1)", username).Scan(&exists)
+	return r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM user WHERE username=$1)", username).Scan(&exists)
 }
 
 func (r *UserRepositoryImpl) SaveUser(username string, password string) error {
@@ -31,14 +31,14 @@ func (r *UserRepositoryImpl) SaveUser(username string, password string) error {
 		return err
 	}
 
-	_, err = r.db.Exec("INSERT INTO User (username, password) VALUES ($1, $2)", username, string(hashedPassword))
+	_, err = r.db.Exec("INSERT INTO user (username, password) VALUES ($1, $2)", username, string(hashedPassword))
 	return err
 }
 
 func (r *UserRepositoryImpl) CheckUserExist(username string, password string) error {
 	var hashedPassword string
 
-	err := r.db.QueryRow("SELECT password FROM User WHERE username=$1", username).Scan(&hashedPassword)
+	err := r.db.QueryRow("SELECT password FROM user WHERE username=$1", username).Scan(&hashedPassword)
 	if err != nil {
 		return err
 	}

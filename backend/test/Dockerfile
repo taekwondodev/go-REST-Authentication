@@ -10,8 +10,8 @@ COPY go.mod go.sum ./
 # Download dependencies
 RUN go mod download
 
-# Copy the rest of the application code
-COPY *.go ./
+# Copy the backend module into the container
+COPY ../backend /app/backend
 
 # Create a non-root user and group
 RUN addgroup -S nonroot \

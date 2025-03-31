@@ -31,7 +31,7 @@ If the access token is expired, there is the refresh endpoint to get a new acces
 
 ## Database
 
-I use postgreSQL for the project. At the start of your container instance will run the init script. It contains a table for the user with username and password as attribute.
+I use postgreSQL for the project. At the start of your container instance will run the migration script. It contains a table for the user.
 
 ## Docker
 
@@ -48,16 +48,19 @@ I use docker to manage dependencies. I divided the project into 3 containers: ba
    ```bash
    git clone https://github.com/taekwondodev/go-REST-Template.git
    ```
-3. Create a file ".env" in the main directory and insert the value of your instances:
+2. Create a file ".env" in the main directory and insert the value of your instances:
    
    ```txt
-   JWT_SECRET=default
-   POSTGRES_URL=default
+   JWT_SECRET=default 
+   DB_HOST=postgres                                         # Service Name in Docker Compose
+   DB_PORT=5432
    POSTGRES_USER=postgres
    POSTGRES_PASSWORD=postgres
-   POSTGRES_DB=postgres
+   POSTGRES_DB=go                                           # Database Name
+   POSTGRES_URL=jdbc:postgresql://postgres:5432/go
+   DB_SSLMODE=disable
    ```
-5. Open the terminal in the main directory and run the command:
+3. Open the terminal in the main directory and run the command:
    
    ```bash
    docker compose up -d
