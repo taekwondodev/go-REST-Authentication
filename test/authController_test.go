@@ -57,7 +57,7 @@ func TestAuthControllerRegisterCorrect(t *testing.T) {
 	authController.Register(w, r)
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.JSONEq(t, `{"Message":"Sign-Up successfully!"}`, w.Body.String())
+	assert.JSONEq(t, `{"message":"Sign-Up successfully!"}`, w.Body.String())
 	mockService.AssertExpectations(t)
 }
 
@@ -71,7 +71,7 @@ func TestAuthControllerRegisterConflict(t *testing.T) {
 		Email:    emailString,
 	}
 
-	mockService.On("Register", req).Return(nil, errors.New("user already exists"))
+	mockService.On("Register", req).Return((*dto.AuthResponse)(nil), errors.New("user already exists"))
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodPost, endpointRegisterString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword",  "email":"example@domain.com"}`))
@@ -118,18 +118,17 @@ func TestAuthControllerLoginCorrect(t *testing.T) {
 	req := dto.AuthRequest{
 		Username: "testuser",
 		Password: "testpassword",
-		Email:    emailString,
 	}
 
 	mockService.On("Login", req).Return(&dto.AuthResponse{Message: "Login successful!"}, nil)
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, endpointLoginString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword",  "email":"example@domain.com"}`))
+	r := httptest.NewRequest(http.MethodPost, endpointLoginString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword"}`))
 
 	authController.Login(w, r)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.JSONEq(t, `{"Message":"Login successful!"}`, w.Body.String())
+	assert.JSONEq(t, `{"message":"Login successful!"}`, w.Body.String())
 	mockService.AssertExpectations(t)
 }
 
@@ -140,13 +139,12 @@ func TestAuthControllerLoginConflict(t *testing.T) {
 	req := dto.AuthRequest{
 		Username: "testuser",
 		Password: "testpassword",
-		Email:    emailString,
 	}
 
-	mockService.On("Login", req).Return(nil, errors.New("invalid credentials"))
+	mockService.On("Login", req).Return((*dto.AuthResponse)(nil), errors.New("invalid credentials"))
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, endpointLoginString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword"}, "email":"example@domain.com"}`))
+	r := httptest.NewRequest(http.MethodPost, endpointLoginString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword"}`))
 
 	authController.Login(w, r)
 
@@ -173,7 +171,7 @@ func TestAuthControllerLoginNotPOST(t *testing.T) {
 	authController := controller.NewAuthController(mockService)
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, endpointLoginString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword", "email":"example@domain.com"}`))
+	r := httptest.NewRequest(http.MethodGet, endpointLoginString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword"}`))
 
 	authController.Login(w, r)
 
@@ -199,7 +197,7 @@ func TestAuthControllerRefreshTokenCorrect(t *testing.T) {
 	authController.Refresh(w, r)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.JSONEq(t, `{"Message":"Token refreshed successfully!"}`, w.Body.String())
+	assert.JSONEq(t, `{"message":"Token refreshed successfully!"}`, w.Body.String())
 	mockService.AssertExpectations(t)
 }
 
@@ -211,7 +209,7 @@ func TestAuthControllerRefreshTokenUnauthorized(t *testing.T) {
 		RefreshToken: "invalid-refresh-token",
 	}
 
-	mockService.On("Refresh", req).Return(nil, errors.New("invalid refresh token"))
+	mockService.On("Refresh", req).Return((*dto.AuthResponse)(nil), errors.New("invalid refresh token"))
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodPost, endpointRefreshTokenString, bytes.NewBufferString(`{"refreshToken":"invalid-refresh-token"}`))

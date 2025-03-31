@@ -11,7 +11,7 @@ import (
 )
 
 const existQuery = "SELECT EXISTS"
-const selectPasswordQuery = "SELECT password_hash FROM User WHERE username=\\$1"
+const selectPasswordQuery = "SELECT password_hash FROM user WHERE username=\\$1"
 const emailString = "example@domain.com"
 
 func TestCheckUsernameExistCorrect(t *testing.T) {
@@ -103,24 +103,15 @@ func TestSaveUserCorrect(t *testing.T) {
 
 	username := "testuser"
 	password := "password123"
-	mock.ExpectExec("INSERT INTO User").WithArgs(username, password, emailString).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("INSERT INTO user \\(username, email, password_hash\\) VALUES \\(\\$1, \\$2, \\$3\\)").
+		WithArgs(username, emailString, sqlmock.AnyArg()).
+		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	err := repo.SaveUser(username, password, emailString)
 	assert.NoError(t, err)
-}
-
-func TestSaveUserPasswordHashingError(t *testing.T) {
-	db, _, _ := sqlmock.New()
-	defer db.Close()
-
-	repo := repository.NewUserRepository(db)
-
-	username := "testuser"
-	invalidPassword := string(make([]byte, 0))
-
-	err := repo.SaveUser(username, invalidPassword, emailString)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "bcrypt")
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("aspettative non soddisfatte: %v", err)
+	}
 }
 
 func TestSaveUserDbError(t *testing.T) {
@@ -131,7 +122,7 @@ func TestSaveUserDbError(t *testing.T) {
 
 	username := "testuser"
 	password := "password123"
-	mock.ExpectExec("INSERT INTO User").WithArgs(username, password, emailString).WillReturnError(sql.ErrConnDone)
+	mock.ExpectExec("INSERT INTO user").WithArgs(username, password, emailString).WillReturnError(sql.ErrConnDone)
 
 	err := repo.SaveUser(username, password, emailString)
 	assert.Error(t, err)

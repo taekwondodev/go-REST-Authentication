@@ -26,4 +26,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace backend => /Users/taekwondodev/Desktop/go-REST-template/backend
+replace backend => ../backend

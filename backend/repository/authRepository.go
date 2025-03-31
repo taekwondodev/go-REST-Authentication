@@ -39,7 +39,10 @@ func (r *UserRepositoryImpl) SaveUser(username string, password string, email st
 
 	_, err = r.db.Exec(
 		"INSERT INTO user (username, email, password_hash) VALUES ($1, $2, $3)",
-		username, email, string(hashedPassword))
+		username,
+		email,
+		string(hashedPassword),
+	)
 	return err
 }
 

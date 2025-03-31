@@ -67,8 +67,8 @@ func TestAuthServiceRegisterCorrect(t *testing.T) {
 		Email:    emailString,
 	}
 
-	mockRepo.On("CheckUsernameExist", req.Username).Return(nil)
 	mockRepo.On("CheckEmailExist", req.Email).Return(nil)
+	mockRepo.On("CheckUsernameExist", req.Username).Return(nil)
 	mockRepo.On("SaveUser", req.Username, req.Password, req.Email).Return(nil)
 
 	res, err := authService.Register(req)
@@ -104,6 +104,7 @@ func TestAuthServiceRegisterUserAlreadyExists(t *testing.T) {
 		Email:    emailString,
 	}
 
+	mockRepo.On("CheckEmailExist", req.Email).Return(nil)
 	mockRepo.On("CheckUsernameExist", req.Username).Return(assert.AnError)
 
 	res, err := authService.Register(req)
@@ -124,7 +125,6 @@ func TestAuthServiceRegisterEmailAlreadyExists(t *testing.T) {
 		Email:    emailString,
 	}
 
-	mockRepo.On("CheckUsernameExist", req.Username).Return(nil)
 	mockRepo.On("CheckEmailExist", req.Email).Return(assert.AnError)
 
 	res, err := authService.Register(req)
@@ -145,8 +145,8 @@ func TestAuthServiceRegisterSaveUserError(t *testing.T) {
 		Email:    emailString,
 	}
 
-	mockRepo.On("CheckUsernameExist", req.Username).Return(nil)
 	mockRepo.On("CheckEmailExist", req.Email).Return(nil)
+	mockRepo.On("CheckUsernameExist", req.Username).Return(nil)
 	mockRepo.On("SaveUser", req.Username, req.Password, req.Email).Return(assert.AnError)
 
 	res, err := authService.Register(req)

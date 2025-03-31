@@ -1,4 +1,12 @@
 services:
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: test
+    profiles:
+      - run-tests
+
   backend:
     build:
       context: ./backend
@@ -16,14 +24,6 @@ services:
       - DB_SSLMODE=${DB_SSLMODE}
     depends_on:
       - postgres
-
-  test:
-    build:
-      context: ./backend/test
-      dockerfile: Dockerfile
-    container_name: test
-    profiles:
-      - run-tests
   
   flyway:
     image: flyway/flyway:latest
