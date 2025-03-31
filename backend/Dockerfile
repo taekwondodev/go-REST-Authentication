@@ -9,10 +9,10 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o main .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main .
 
 # Runtime
-FROM alpine:3.18 AS runtime
+FROM debian:bullseye-slim AS runtime
 
 WORKDIR /app
 
@@ -21,8 +21,7 @@ COPY --from=builder /app/main .
 EXPOSE 8080
 
 # Create a non-root user and group
-RUN addgroup -S nonroot \
-    && adduser -S nonroot -G nonroot
+RUN groupadd -r nonroot && useradd -r -g nonroot nonroot
 
 # Switch to the non-root user
 USER nonroot

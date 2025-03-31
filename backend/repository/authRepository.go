@@ -38,7 +38,7 @@ func (r *UserRepositoryImpl) SaveUser(username string, password string, email st
 	}
 
 	_, err = r.db.Exec(
-		"INSERT INTO user (username, email, password) VALUES ($1, $2, $3)",
+		"INSERT INTO user (username, email, password_hash) VALUES ($1, $2, $3)",
 		username, email, string(hashedPassword))
 	return err
 }
@@ -46,7 +46,7 @@ func (r *UserRepositoryImpl) SaveUser(username string, password string, email st
 func (r *UserRepositoryImpl) CheckUserExist(username string, password string) error {
 	var hashedPassword string
 
-	err := r.db.QueryRow("SELECT password FROM user WHERE username=$1", username).Scan(&hashedPassword)
+	err := r.db.QueryRow("SELECT password_hash FROM user WHERE username=$1", username).Scan(&hashedPassword)
 	if err != nil {
 		return err
 	}

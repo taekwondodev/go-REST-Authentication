@@ -11,7 +11,7 @@ import (
 )
 
 const existQuery = "SELECT EXISTS"
-const selectPasswordQuery = "SELECT password FROM User WHERE username=\\$1"
+const selectPasswordQuery = "SELECT password_hash FROM User WHERE username=\\$1"
 const emailString = "example@domain.com"
 
 func TestCheckUsernameExistCorrect(t *testing.T) {
@@ -151,7 +151,7 @@ func TestCheckUserExistCorrect(t *testing.T) {
 
 	mock.ExpectQuery(selectPasswordQuery).
 		WithArgs(username).
-		WillReturnRows(sqlmock.NewRows([]string{"password"}).AddRow(string(hashedPassword)))
+		WillReturnRows(sqlmock.NewRows([]string{"password_hash"}).AddRow(string(hashedPassword)))
 
 	err := repo.CheckUserExist(username, password)
 	assert.NoError(t, err)
@@ -170,7 +170,7 @@ func TestCheckUserExistIncorrectPassword(t *testing.T) {
 
 	mock.ExpectQuery(selectPasswordQuery).
 		WithArgs(username).
-		WillReturnRows(sqlmock.NewRows([]string{"password"}).AddRow(string(hashedPassword)))
+		WillReturnRows(sqlmock.NewRows([]string{"password_hash"}).AddRow(string(hashedPassword)))
 
 	err := repo.CheckUserExist(username, wrongPassword)
 	assert.Error(t, err)
