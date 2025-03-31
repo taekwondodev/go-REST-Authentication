@@ -9,6 +9,7 @@ CREATE TABLE "user" (
 );
 
 CREATE INDEX idx_user_username ON "user" (username);
+CREATE INDEX idx_user_email ON "user" (email);
 CREATE INDEX idx_user_username_password ON "user" (username, password);
 
 CREATE OR REPLACE FUNCTION update_updated_at()
