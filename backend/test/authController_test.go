@@ -46,12 +46,13 @@ func TestAuthControllerRegisterCorrect(t *testing.T) {
 	req := dto.AuthRequest{
 		Username: "testuser",
 		Password: "testpassword",
+		Email:    emailString,
 	}
 
 	mockService.On("Register", req).Return(&dto.AuthResponse{Message: "Sign-Up successfully!"}, nil)
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, endpointRegisterString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword"}`))
+	r := httptest.NewRequest(http.MethodPost, endpointRegisterString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword", "email":"example@domain.com"}`))
 
 	authController.Register(w, r)
 
@@ -67,12 +68,13 @@ func TestAuthControllerRegisterConflict(t *testing.T) {
 	req := dto.AuthRequest{
 		Username: "testuser",
 		Password: "testpassword",
+		Email:    emailString,
 	}
 
 	mockService.On("Register", req).Return(nil, errors.New("user already exists"))
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, endpointRegisterString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword"}`))
+	r := httptest.NewRequest(http.MethodPost, endpointRegisterString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword",  "email":"example@domain.com"}`))
 
 	authController.Register(w, r)
 
@@ -99,7 +101,7 @@ func TestAuthControllerRegisterNotPOST(t *testing.T) {
 	authController := controller.NewAuthController(mockService)
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, endpointRegisterString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword"}`))
+	r := httptest.NewRequest(http.MethodGet, endpointRegisterString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword",  "email":"example@domain.com"}`))
 
 	authController.Register(w, r)
 
@@ -116,12 +118,13 @@ func TestAuthControllerLoginCorrect(t *testing.T) {
 	req := dto.AuthRequest{
 		Username: "testuser",
 		Password: "testpassword",
+		Email:    emailString,
 	}
 
 	mockService.On("Login", req).Return(&dto.AuthResponse{Message: "Login successful!"}, nil)
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, endpointLoginString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword"}`))
+	r := httptest.NewRequest(http.MethodPost, endpointLoginString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword",  "email":"example@domain.com"}`))
 
 	authController.Login(w, r)
 
@@ -137,12 +140,13 @@ func TestAuthControllerLoginConflict(t *testing.T) {
 	req := dto.AuthRequest{
 		Username: "testuser",
 		Password: "testpassword",
+		Email:    emailString,
 	}
 
 	mockService.On("Login", req).Return(nil, errors.New("invalid credentials"))
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, endpointLoginString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword"}`))
+	r := httptest.NewRequest(http.MethodPost, endpointLoginString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword"}, "email":"example@domain.com"}`))
 
 	authController.Login(w, r)
 
@@ -169,7 +173,7 @@ func TestAuthControllerLoginNotPOST(t *testing.T) {
 	authController := controller.NewAuthController(mockService)
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, endpointLoginString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword"}`))
+	r := httptest.NewRequest(http.MethodGet, endpointLoginString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword", "email":"example@domain.com"}`))
 
 	authController.Login(w, r)
 

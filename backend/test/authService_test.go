@@ -26,8 +26,13 @@ func (m *MockUserRepository) CheckUsernameExist(username string) error {
 	return args.Error(0)
 }
 
-func (m *MockUserRepository) SaveUser(username string, password string) error {
-	args := m.Called(username, password)
+func (m *MockUserRepository) CheckEmailExist(email string) error {
+	args := m.Called(email)
+	return args.Error(0)
+}
+
+func (m *MockUserRepository) SaveUser(username string, password string, email string) error {
+	args := m.Called(username, password, email)
 	return args.Error(0)
 }
 
@@ -36,7 +41,7 @@ func (m *MockUserRepository) CheckUserExist(username string, password string) er
 	return args.Error(0)
 }
 
-func (m *MockToken) GenerateJWT(username string) (string, string, error) {
+func (m *MockToken) GenerateJWT(username string, email string) (string, string, error) {
 	if username == "fail" {
 		return "", "", errors.New(errorTokenString)
 	}
@@ -59,10 +64,12 @@ func TestAuthServiceRegisterCorrect(t *testing.T) {
 	req := dto.AuthRequest{
 		Username: "testuser",
 		Password: "password123",
+		Email:    emailString,
 	}
 
 	mockRepo.On("CheckUsernameExist", req.Username).Return(nil)
-	mockRepo.On("SaveUser", req.Username, req.Password).Return(nil)
+	mockRepo.On("CheckEmailExist", req.Email).Return(nil)
+	mockRepo.On("SaveUser", req.Username, req.Password, req.Email).Return(nil)
 
 	res, err := authService.Register(req)
 
@@ -78,6 +85,7 @@ func TestAuthServiceRegisterInvalidRequest(t *testing.T) {
 	req := dto.AuthRequest{
 		Username: "",
 		Password: "",
+		Email:    "",
 	}
 
 	res, err := authService.Register(req)
@@ -93,9 +101,31 @@ func TestAuthServiceRegisterUserAlreadyExists(t *testing.T) {
 	req := dto.AuthRequest{
 		Username: "existinguser",
 		Password: "password123",
+		Email:    emailString,
 	}
 
 	mockRepo.On("CheckUsernameExist", req.Username).Return(assert.AnError)
+
+	res, err := authService.Register(req)
+
+	assert.Nil(t, res)
+	assert.Error(t, err)
+	assert.Equal(t, assert.AnError, err)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestAuthServiceRegisterEmailAlreadyExists(t *testing.T) {
+	mockRepo := new(MockUserRepository)
+	authService := service.NewAuthService(mockRepo)
+
+	req := dto.AuthRequest{
+		Username: "existinguser",
+		Password: "password123",
+		Email:    emailString,
+	}
+
+	mockRepo.On("CheckUsernameExist", req.Username).Return(nil)
+	mockRepo.On("CheckEmailExist", req.Email).Return(assert.AnError)
 
 	res, err := authService.Register(req)
 
@@ -112,10 +142,12 @@ func TestAuthServiceRegisterSaveUserError(t *testing.T) {
 	req := dto.AuthRequest{
 		Username: "newuser",
 		Password: "password123",
+		Email:    emailString,
 	}
 
 	mockRepo.On("CheckUsernameExist", req.Username).Return(nil)
-	mockRepo.On("SaveUser", req.Username, req.Password).Return(assert.AnError)
+	mockRepo.On("CheckEmailExist", req.Email).Return(nil)
+	mockRepo.On("SaveUser", req.Username, req.Password, req.Email).Return(assert.AnError)
 
 	res, err := authService.Register(req)
 
@@ -140,7 +172,7 @@ func TestAuthServiceLoginCorrect(t *testing.T) {
 	mockRepo.On("CheckUserExist", req.Username, req.Password).Return(nil)
 	config.JwtSecret = "testsecret"
 
-	accessToken, refreshToken, _ := mockToken.GenerateJWT(req.Username)
+	accessToken, refreshToken, _ := mockToken.GenerateJWT(req.Username, req.Email)
 	res, err := authService.Login(req)
 
 	assert.NoError(t, err)
@@ -197,7 +229,7 @@ func TestAuthServiceLoginJWTError(t *testing.T) {
 	mockRepo.On("CheckUserExist", req.Username, req.Password).Return(nil)
 	config.JwtSecret = "testsecret"
 
-	mockToken.GenerateJWT(req.Username)
+	mockToken.GenerateJWT(req.Username, req.Email)
 	res, err := authService.Login(req)
 
 	assert.Nil(t, res)
@@ -219,7 +251,7 @@ func TestAuthServiceRefreshCorrect(t *testing.T) {
 
 	config.JwtSecret = "testsecret"
 	claims, _ := MockToken.ValidateJWT(req.RefreshToken)
-	accessToken, _, _ := MockToken.GenerateJWT(claims.Username)
+	accessToken, _, _ := MockToken.GenerateJWT(claims.Username, claims.Email)
 
 	res, err := authService.Refresh(req)
 
@@ -276,7 +308,7 @@ func TestAuthServiceRefreshErrorGenerate(t *testing.T) {
 
 	claims, _ := mockToken.ValidateJWT(req.RefreshToken)
 	claims.Username = "fail"
-	mockToken.GenerateJWT(claims.Username)
+	mockToken.GenerateJWT(claims.Username, claims.Email)
 	res, err := authService.Refresh(req)
 
 	assert.Nil(t, res)

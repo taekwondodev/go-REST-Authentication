@@ -8,19 +8,21 @@ import (
 
 type Claims struct {
 	Username string `json:"username"`
+	Email    string `json:"email"`
 	jwt.RegisteredClaims
 }
 type Token interface {
-	GenerateJWT(username string) (string, string, error)
+	GenerateJWT(username string, email string) (string, string, error)
 	ValidateJWT(tokenString string) (*Claims, error)
 }
 
 type JWT struct{}
 
-func (j *JWT) GenerateJWT(username string) (string, string, error) {
+func (j *JWT) GenerateJWT(username string, email string) (string, string, error) {
 	// Valid for 24 hours
 	accessClaims := Claims{
 		Username: username,
+		Email:    email,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -30,6 +32,7 @@ func (j *JWT) GenerateJWT(username string) (string, string, error) {
 	// Valid for 7 days
 	refreshClaims := Claims{
 		Username: username,
+		Email:    email,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

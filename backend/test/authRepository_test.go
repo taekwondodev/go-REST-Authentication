@@ -12,6 +12,7 @@ import (
 
 const existQuery = "SELECT EXISTS"
 const selectPasswordQuery = "SELECT password FROM User WHERE username=\\$1"
+const emailString = "example@domain.com"
 
 func TestCheckUsernameExistCorrect(t *testing.T) {
 	db, mock, _ := sqlmock.New()
@@ -55,6 +56,45 @@ func TestCheckUsernameExistDbError(t *testing.T) {
 
 /****************************************************************/
 
+func TestCheckEmailExistCorrect(t *testing.T) {
+	db, mock, _ := sqlmock.New()
+	defer db.Close()
+
+	repo := repository.NewUserRepository(db)
+
+	rows := sqlmock.NewRows([]string{"exists"}).AddRow(true)
+	mock.ExpectQuery(existQuery).WithArgs(emailString).WillReturnRows(rows)
+
+	err := repo.CheckEmailExist(emailString)
+	assert.NoError(t, err)
+}
+
+func TestCheckEmailExistNotFound(t *testing.T) {
+	db, mock, _ := sqlmock.New()
+	defer db.Close()
+
+	repo := repository.NewUserRepository(db)
+
+	mock.ExpectQuery(existQuery).WithArgs(emailString).WillReturnError(sql.ErrNoRows)
+
+	err := repo.CheckEmailExist(emailString)
+	assert.Error(t, err)
+}
+
+func TestCheckEmailExistDbError(t *testing.T) {
+	db, mock, _ := sqlmock.New()
+	defer db.Close()
+
+	repo := repository.NewUserRepository(db)
+
+	mock.ExpectQuery(existQuery).WithArgs(emailString).WillReturnError(sql.ErrConnDone)
+
+	err := repo.CheckEmailExist(emailString)
+	assert.Error(t, err)
+}
+
+/****************************************************************/
+
 func TestSaveUserCorrect(t *testing.T) {
 	db, mock, _ := sqlmock.New()
 	defer db.Close()
@@ -63,9 +103,9 @@ func TestSaveUserCorrect(t *testing.T) {
 
 	username := "testuser"
 	password := "password123"
-	mock.ExpectExec("INSERT INTO User").WithArgs(username, password).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("INSERT INTO User").WithArgs(username, password, emailString).WillReturnResult(sqlmock.NewResult(1, 1))
 
-	err := repo.SaveUser(username, password)
+	err := repo.SaveUser(username, password, emailString)
 	assert.NoError(t, err)
 }
 
@@ -78,7 +118,7 @@ func TestSaveUserPasswordHashingError(t *testing.T) {
 	username := "testuser"
 	invalidPassword := string(make([]byte, 0))
 
-	err := repo.SaveUser(username, invalidPassword)
+	err := repo.SaveUser(username, invalidPassword, emailString)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "bcrypt")
 }
@@ -91,9 +131,9 @@ func TestSaveUserDbError(t *testing.T) {
 
 	username := "testuser"
 	password := "password123"
-	mock.ExpectExec("INSERT INTO User").WithArgs(username, password).WillReturnError(sql.ErrConnDone)
+	mock.ExpectExec("INSERT INTO User").WithArgs(username, password, emailString).WillReturnError(sql.ErrConnDone)
 
-	err := repo.SaveUser(username, password)
+	err := repo.SaveUser(username, password, emailString)
 	assert.Error(t, err)
 }
 
