@@ -11,7 +11,14 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy the rest of the application code
-COPY . .
+COPY *.go ./
+
+# Create a non-root user and group
+RUN addgroup -S nonroot \
+    && adduser -S nonroot -G nonroot
+
+# Switch to the non-root user
+USER nonroot
 
 # Run tests
 CMD ["go", "test", "-v", "./..."]

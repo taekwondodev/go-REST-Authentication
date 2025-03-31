@@ -12,7 +12,7 @@ COPY . .
 RUN go build -o main .
 
 # Runtime
-FROM debian:bullseye-slim
+FROM debian:bullseye-slim AS runtime
 
 WORKDIR /app
 
