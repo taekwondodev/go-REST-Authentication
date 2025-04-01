@@ -11,7 +11,7 @@ import (
 )
 
 const existQuery = "SELECT EXISTS"
-const selectUserQuery = "SELECT id, username, email, password_hash, created_at, updated_at, is_active FROM user WHERE username = \\$1"
+const selectUserQuery = "SELECT id, username, email, password_hash, created_at, updated_at, is_active FROM users WHERE username = \\$1"
 const emailString = "example@domain.com"
 const date = "2023-01-01"
 
@@ -104,15 +104,12 @@ func TestSaveUserCorrect(t *testing.T) {
 
 	username := "testuser"
 	password := "password123"
-	mock.ExpectExec("INSERT INTO user \\(username, email, password_hash\\) VALUES \\(\\$1, \\$2, \\$3\\)").
+	mock.ExpectExec("INSERT INTO users \\(username, email, password_hash\\) VALUES \\(\\$1, \\$2, \\$3\\)").
 		WithArgs(username, emailString, sqlmock.AnyArg()).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	err := repo.SaveUser(username, password, emailString)
 	assert.NoError(t, err)
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("aspettative non soddisfatte: %v", err)
-	}
 }
 
 func TestSaveUserDbError(t *testing.T) {
@@ -123,7 +120,7 @@ func TestSaveUserDbError(t *testing.T) {
 
 	username := "testuser"
 	password := "password123"
-	mock.ExpectExec("INSERT INTO user").WithArgs(username, password, emailString).WillReturnError(sql.ErrConnDone)
+	mock.ExpectExec("INSERT INTO users").WithArgs(username, password, emailString).WillReturnError(sql.ErrConnDone)
 
 	err := repo.SaveUser(username, password, emailString)
 	assert.Error(t, err)

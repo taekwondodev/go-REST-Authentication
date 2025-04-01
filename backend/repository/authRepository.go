@@ -24,12 +24,14 @@ func NewUserRepository(db *sql.DB) UserRepository {
 
 func (r *UserRepositoryImpl) CheckUsernameExist(username string) error {
 	var exists bool
-	return r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM user WHERE username=$1)", username).Scan(&exists)
+	query := "SELECT EXISTS(SELECT 1 FROM users WHERE username=$1)"
+	return r.db.QueryRow(query, username).Scan(&exists)
 }
 
 func (r *UserRepositoryImpl) CheckEmailExist(email string) error {
 	var exists bool
-	return r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM user WHERE email=$1)", email).Scan(&exists)
+	query := "SELECT EXISTS(SELECT 1 FROM users WHERE email=$1)"
+	return r.db.QueryRow(query, email).Scan(&exists)
 }
 
 func (r *UserRepositoryImpl) SaveUser(username string, password string, email string) error {
@@ -38,8 +40,10 @@ func (r *UserRepositoryImpl) SaveUser(username string, password string, email st
 		return err
 	}
 
+	query := "INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3)"
+
 	_, err = r.db.Exec(
-		"INSERT INTO user (username, email, password_hash) VALUES ($1, $2, $3)",
+		query,
 		username,
 		email,
 		string(hashedPassword),
@@ -51,7 +55,7 @@ func (r *UserRepositoryImpl) GetUserByCredentials(username string, password stri
 	var user models.User
 	query := `
         SELECT id, username, email, password_hash, created_at, updated_at, is_active
-        FROM user
+        FROM users
         WHERE username = $1
     `
 

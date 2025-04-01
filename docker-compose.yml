@@ -23,7 +23,8 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - DB_SSLMODE=${DB_SSLMODE}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
   
   flyway:
     image: flyway/flyway:latest
