@@ -1,4 +1,4 @@
-# go-REST-Template
+# go-REST-Authentication
 This is a Template for REST API in Go with JWT, Docker and a Database.
 
 You can use it in two ways:
