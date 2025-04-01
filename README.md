@@ -2,8 +2,8 @@
 This is a Template for REST API in Go with JWT, Docker and a Database.
 
 You can use it in two ways:
-- **Authentication Microservice** (here)
-- **Starting point for a backend** [click here](https://github.com/taekwondodev/go-REST-Template/tree/backend)
+- **Authentication Microservice**
+- **Starting point for a backend**
 
 ## Project Structure
 
@@ -13,13 +13,15 @@ go-REST-template/
 │   ├── config/          # Application configuration (JWT, Database, Environment Variables)
 │   ├── controller/      # Handle HTTP Requests
 │   ├── dto/             # Data Transfer Objects (Request and Response)
+│   ├── models/          # Database Models
 │   ├── repository/      # Handle Database Interaction
 │   ├── service/         # Handle Controller Business Logic
-│   ├── test/            # Unit Testing
 │   ├── Dockerfile       
 │   ├── go.mod           
 │   ├── go.sum           
-│   ├── main.go         
+│   ├── main.go  
+├── test/                # Unit Testing    
+├── Dockerfile.test        
 ├── docker-compose.yml   
 ```
 
@@ -35,11 +37,12 @@ I use postgreSQL for the project. At the start of your container instance will r
 
 ## Docker
 
-I use docker to manage dependencies. I divided the project into 3 containers: backend, test, postgres. So every container will run indipendently from the other two.
+I use docker to manage dependencies. I divided the project into 4 containers: backend, test, postgres, flyway. So every container will run indipendently from the others.
 
 ## Requirements
 
 - Install [Docker](https://docs.docker.com/engine/install/)
+- Install [Go](https://go.dev/dl/) (optional, only for local development)
 
 ## Usage
 
@@ -71,7 +74,7 @@ I use docker to manage dependencies. I divided the project into 3 containers: ba
 To test the repository with automated test run the command in the main directory:
 
 ```bash
-docker compose --profile run-tests up
+docker compose up test
 ```
 
 ## Acknowledgments

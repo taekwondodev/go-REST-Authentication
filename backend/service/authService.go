@@ -45,12 +45,13 @@ func (s *AuthServiceImpl) Login(req dto.AuthRequest) (*dto.AuthResponse, error) 
 		return nil, err
 	}
 
-	if err := s.repo.CheckUserExist(req.Username, req.Password); err != nil {
+	user, err := s.repo.GetUserByCredentials(req.Username, req.Password)
+	if err != nil {
 		return nil, err
 	}
 
 	jwt := config.JWT{}
-	accessToken, refreshToken, err := jwt.GenerateJWT(req.Username, req.Email)
+	accessToken, refreshToken, err := jwt.GenerateJWT(user.Username, user.Email)
 	if err != nil {
 		return nil, err
 	}

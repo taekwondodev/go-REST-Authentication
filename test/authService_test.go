@@ -3,15 +3,13 @@ package test
 import (
 	"backend/config"
 	"backend/dto"
+	"backend/models"
 	"backend/service"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-const errorTokenString = "errore nel generare il token"
 
 type MockUserRepository struct {
 	mock.Mock
@@ -36,23 +34,19 @@ func (m *MockUserRepository) SaveUser(username string, password string, email st
 	return args.Error(0)
 }
 
-func (m *MockUserRepository) CheckUserExist(username string, password string) error {
+func (m *MockUserRepository) GetUserByCredentials(username string, password string) (*models.User, error) {
 	args := m.Called(username, password)
-	return args.Error(0)
+	return args.Get(0).(*models.User), args.Error(1)
 }
 
 func (m *MockToken) GenerateJWT(username string, email string) (string, string, error) {
-	if username == "fail" {
-		return "", "", errors.New(errorTokenString)
-	}
-	return "mockAccessToken", "mockRefreshToken", nil
+	args := m.Called(username, email)
+	return args.String(0), args.String(1), args.Error(2)
 }
 
 func (m *MockToken) ValidateJWT(tokenString string) (*config.Claims, error) {
-	if tokenString == "invalid" {
-		return nil, errors.New("token non valido")
-	}
-	return &config.Claims{Username: "testuser"}, nil
+	args := m.Called(tokenString)
+	return args.Get(0).(*config.Claims), args.Error(1)
 }
 
 /*******************************************************************************/
@@ -169,17 +163,22 @@ func TestAuthServiceLoginCorrect(t *testing.T) {
 		Password: "password123",
 	}
 
-	mockRepo.On("CheckUserExist", req.Username, req.Password).Return(nil)
-	config.JwtSecret = "testsecret"
+	mockUser := &models.User{
+		Username: "testuser",
+		Email:    emailString,
+	}
 
-	accessToken, refreshToken, _ := mockToken.GenerateJWT(req.Username, req.Email)
+	mockRepo.On("GetUserByCredentials", req.Username, req.Password).Return(mockUser, nil)
+	mockToken.On("GenerateJWT", mockUser.Username, mockUser.Email).Return("mockAccessToken", "mockRefreshToken", nil)
+
 	res, err := authService.Login(req)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "Sign-In successfully!", res.Message)
-	assert.Equal(t, accessToken, res.AccessToken)
-	assert.Equal(t, refreshToken, res.RefreshToken)
+	assert.Equal(t, "mockAccessToken", res.AccessToken)
+	assert.Equal(t, "mockRefreshToken", res.RefreshToken)
 	mockRepo.AssertExpectations(t)
+	mockToken.AssertExpectations(t)
 }
 
 func TestAuthServiceLoginInvalidRequest(t *testing.T) {
@@ -206,7 +205,7 @@ func TestAuthServiceLoginUserNotExists(t *testing.T) {
 		Password: "password123",
 	}
 
-	mockRepo.On("CheckUserExist", req.Username, req.Password).Return(assert.AnError)
+	mockRepo.On("GetUserByCredentials", req.Username, req.Password).Return(nil, assert.AnError)
 
 	res, err := authService.Login(req)
 
@@ -226,39 +225,43 @@ func TestAuthServiceLoginJWTError(t *testing.T) {
 		Password: "password123",
 	}
 
-	mockRepo.On("CheckUserExist", req.Username, req.Password).Return(nil)
-	config.JwtSecret = "testsecret"
+	mockUser := &models.User{
+		Username: "fail",
+		Email:    emailString,
+	}
 
-	mockToken.GenerateJWT(req.Username, req.Email)
+	mockRepo.On("GetUserByCredentials", req.Username, req.Password).Return(mockUser, nil)
+	mockToken.On("GenerateJWT", mockUser.Username, mockUser.Email).Return("", "", assert.AnError)
+
 	res, err := authService.Login(req)
 
 	assert.Nil(t, res)
 	assert.Error(t, err)
-	assert.Equal(t, errorTokenString, err.Error())
+	assert.Equal(t, assert.AnError, err.Error())
 	mockRepo.AssertExpectations(t)
+	mockToken.AssertExpectations(t)
 }
 
 /*******************************************************************************/
 
 func TestAuthServiceRefreshCorrect(t *testing.T) {
 	mockRepo := new(MockUserRepository)
-	MockToken := new(MockToken)
+	mockToken := new(MockToken)
 	authService := service.NewAuthService(mockRepo)
 
 	req := dto.RefreshTokenRequest{
 		RefreshToken: "valid-refresh-token",
 	}
 
-	config.JwtSecret = "testsecret"
-	claims, _ := MockToken.ValidateJWT(req.RefreshToken)
-	accessToken, _, _ := MockToken.GenerateJWT(claims.Username, claims.Email)
+	mockToken.On("ValidateJWT", req.RefreshToken).Return(&config.Claims{Username: "testuser", Email: emailString}, nil)
+	mockToken.On("GenerateJWT", "testuser", emailString).Return("mockAccessToken", "", nil)
 
 	res, err := authService.Refresh(req)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "Update token successfully!", res.Message)
-	assert.Equal(t, accessToken, res.AccessToken)
-	MockToken.AssertExpectations(t)
+	assert.Equal(t, "mockAccessToken", res.AccessToken)
+	mockToken.AssertExpectations(t)
 }
 
 func TestAuthServiceRefreshInvalidRequest(t *testing.T) {
@@ -284,14 +287,13 @@ func TestAuthServiceRefreshInvalidToken(t *testing.T) {
 		RefreshToken: "invalid",
 	}
 
-	config.JwtSecret = "testsecret"
+	mockToken.On("ValidateJWT", req.RefreshToken).Return(nil, assert.AnError)
 
-	mockToken.ValidateJWT(req.RefreshToken)
 	res, err := authService.Refresh(req)
 
 	assert.Nil(t, res)
 	assert.Error(t, err)
-	assert.Equal(t, "token non valido", err.Error())
+	assert.Equal(t, assert.AnError, err.Error())
 	mockToken.AssertExpectations(t)
 }
 
@@ -304,15 +306,13 @@ func TestAuthServiceRefreshErrorGenerate(t *testing.T) {
 		RefreshToken: "invalid-refresh-token",
 	}
 
-	config.JwtSecret = "testsecret"
+	mockToken.On("ValidateJWT", req.RefreshToken).Return(&config.Claims{Username: "testuser", Email: emailString}, nil)
+	mockToken.On("GenerateJWT", "testuser", emailString).Return("", "", assert.AnError)
 
-	claims, _ := mockToken.ValidateJWT(req.RefreshToken)
-	claims.Username = "fail"
-	mockToken.GenerateJWT(claims.Username, claims.Email)
 	res, err := authService.Refresh(req)
 
 	assert.Nil(t, res)
 	assert.Error(t, err)
-	assert.Equal(t, errorTokenString, err.Error())
+	assert.Equal(t, assert.AnError, err.Error())
 	mockToken.AssertExpectations(t)
 }

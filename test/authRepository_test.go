@@ -11,7 +11,7 @@ import (
 )
 
 const existQuery = "SELECT EXISTS"
-const selectPasswordQuery = "SELECT password_hash FROM user WHERE username=\\$1"
+const selectUserQuery = "SELECT id, username, email, password_hash, created_at, update_at, is_active FROM user WHERE username = \\$1"
 const emailString = "example@domain.com"
 
 func TestCheckUsernameExistCorrect(t *testing.T) {
@@ -130,7 +130,7 @@ func TestSaveUserDbError(t *testing.T) {
 
 /****************************************************************/
 
-func TestCheckUserExistCorrect(t *testing.T) {
+func TestGetUserByCredentialsCorrect(t *testing.T) {
 	db, mock, _ := sqlmock.New()
 	defer db.Close()
 
@@ -140,15 +140,18 @@ func TestCheckUserExistCorrect(t *testing.T) {
 	password := "password123"
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
-	mock.ExpectQuery(selectPasswordQuery).
+	mock.ExpectQuery(selectUserQuery).
 		WithArgs(username).
-		WillReturnRows(sqlmock.NewRows([]string{"password_hash"}).AddRow(string(hashedPassword)))
+		WillReturnRows(sqlmock.NewRows([]string{"id, username, email, password_hash, created_at, updated_at, is_active"}).
+			AddRow(1, username, emailString, string(hashedPassword), "2023-01-01", "2023-01-01", true))
 
-	err := repo.CheckUserExist(username, password)
+	user, err := repo.GetUserByCredentials(username, password)
 	assert.NoError(t, err)
+	assert.NotNil(t, user)
+	assert.Equal(t, username, user.Username)
 }
 
-func TestCheckUserExistIncorrectPassword(t *testing.T) {
+func TestGetUserByCredentialsIncorrectPassword(t *testing.T) {
 	db, mock, _ := sqlmock.New()
 	defer db.Close()
 
@@ -159,15 +162,17 @@ func TestCheckUserExistIncorrectPassword(t *testing.T) {
 	wrongPassword := "wrongpassword"
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
-	mock.ExpectQuery(selectPasswordQuery).
+	mock.ExpectQuery(selectUserQuery).
 		WithArgs(username).
-		WillReturnRows(sqlmock.NewRows([]string{"password_hash"}).AddRow(string(hashedPassword)))
+		WillReturnRows(sqlmock.NewRows([]string{"id, username, email, password_hash, created_at, updated_at, is_active"}).
+			AddRow(1, username, emailString, string(hashedPassword), "2023-01-01", "2023-01-01", true))
 
-	err := repo.CheckUserExist(username, wrongPassword)
+	user, err := repo.GetUserByCredentials(username, wrongPassword)
 	assert.Error(t, err)
+	assert.Nil(t, user)
 }
 
-func TestCheckUserExistUserNotFound(t *testing.T) {
+func TestGetUserByCredentialsUserNotFound(t *testing.T) {
 	db, mock, _ := sqlmock.New()
 	defer db.Close()
 
@@ -176,15 +181,16 @@ func TestCheckUserExistUserNotFound(t *testing.T) {
 	username := "nonexistentuser"
 	password := "password123"
 
-	mock.ExpectQuery(selectPasswordQuery).
+	mock.ExpectQuery(selectUserQuery).
 		WithArgs(username).
 		WillReturnError(sql.ErrNoRows)
 
-	err := repo.CheckUserExist(username, password)
+	user, err := repo.GetUserByCredentials(username, password)
 	assert.Error(t, err)
+	assert.Nil(t, user)
 }
 
-func TestCheckUserExistDbError(t *testing.T) {
+func TestGetUserByCredentialsExistDbError(t *testing.T) {
 	db, mock, _ := sqlmock.New()
 	defer db.Close()
 
@@ -193,10 +199,11 @@ func TestCheckUserExistDbError(t *testing.T) {
 	username := "testuser"
 	password := "password123"
 
-	mock.ExpectQuery(selectPasswordQuery).
+	mock.ExpectQuery(selectUserQuery).
 		WithArgs(username).
 		WillReturnError(sql.ErrConnDone)
 
-	err := repo.CheckUserExist(username, password)
+	user, err := repo.GetUserByCredentials(username, password)
 	assert.Error(t, err)
+	assert.Nil(t, user)
 }

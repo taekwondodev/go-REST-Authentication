@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"backend/models"
 	"database/sql"
 
 	"golang.org/x/crypto/bcrypt"
@@ -9,7 +10,7 @@ import (
 type UserRepository interface {
 	CheckUsernameExist(username string) error
 	SaveUser(username string, password string, email string) error
-	CheckUserExist(username string, password string) error
+	GetUserByCredentials(username string, password string) (*models.User, error)
 	CheckEmailExist(email string) error
 }
 
@@ -46,13 +47,25 @@ func (r *UserRepositoryImpl) SaveUser(username string, password string, email st
 	return err
 }
 
-func (r *UserRepositoryImpl) CheckUserExist(username string, password string) error {
-	var hashedPassword string
+func (r *UserRepositoryImpl) GetUserByCredentials(username string, password string) (*models.User, error) {
+	var user models.User
+	query := `
+        SELECT id, username, email, password_hash, created_at, updated_at, is_active
+        FROM user
+        WHERE username = $1
+    `
 
-	err := r.db.QueryRow("SELECT password_hash FROM user WHERE username=$1", username).Scan(&hashedPassword)
+	err := r.db.QueryRow(query, username).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+		&user.IsActive,
+	)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	return &user, nil
 }

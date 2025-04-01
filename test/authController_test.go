@@ -231,7 +231,7 @@ func TestAuthControllerRefreshTokenInvalidRequest(t *testing.T) {
 	authController.Refresh(w, r)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, "Request non valida\n", w.Body.String())
+	assert.Equal(t, "Bad Request\n", w.Body.String())
 }
 
 func TestAuthControllerRefreshTokenNotPOST(t *testing.T) {
