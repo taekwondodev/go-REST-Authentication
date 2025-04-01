@@ -67,5 +67,11 @@ func (r *UserRepositoryImpl) GetUserByCredentials(username string, password stri
 	if err != nil {
 		return nil, err
 	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err != nil {
+		return nil, err
+	}
+
 	return &user, nil
 }

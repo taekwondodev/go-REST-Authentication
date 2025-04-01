@@ -11,8 +11,9 @@ import (
 )
 
 const existQuery = "SELECT EXISTS"
-const selectUserQuery = "SELECT id, username, email, password_hash, created_at, update_at, is_active FROM user WHERE username = \\$1"
+const selectUserQuery = "SELECT id, username, email, password_hash, created_at, updated_at, is_active FROM user WHERE username = \\$1"
 const emailString = "example@domain.com"
+const date = "2023-01-01"
 
 func TestCheckUsernameExistCorrect(t *testing.T) {
 	db, mock, _ := sqlmock.New()
@@ -139,11 +140,14 @@ func TestGetUserByCredentialsCorrect(t *testing.T) {
 	username := "testuser"
 	password := "password123"
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	columns := []string{"id", "username", "email", "password_hash", "created_at", "updated_at", "is_active"}
 
 	mock.ExpectQuery(selectUserQuery).
 		WithArgs(username).
-		WillReturnRows(sqlmock.NewRows([]string{"id, username, email, password_hash, created_at, updated_at, is_active"}).
-			AddRow(1, username, emailString, string(hashedPassword), "2023-01-01", "2023-01-01", true))
+		WillReturnRows(
+			sqlmock.NewRows(columns).
+				AddRow(1, username, emailString, string(hashedPassword), date, date, true),
+		)
 
 	user, err := repo.GetUserByCredentials(username, password)
 	assert.NoError(t, err)
@@ -161,11 +165,14 @@ func TestGetUserByCredentialsIncorrectPassword(t *testing.T) {
 	password := "password123"
 	wrongPassword := "wrongpassword"
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	columns := []string{"id", "username", "email", "password_hash", "created_at", "updated_at", "is_active"}
 
 	mock.ExpectQuery(selectUserQuery).
 		WithArgs(username).
-		WillReturnRows(sqlmock.NewRows([]string{"id, username, email, password_hash, created_at, updated_at, is_active"}).
-			AddRow(1, username, emailString, string(hashedPassword), "2023-01-01", "2023-01-01", true))
+		WillReturnRows(
+			sqlmock.NewRows(columns).
+				AddRow(1, username, emailString, string(hashedPassword), date, date, true),
+		)
 
 	user, err := repo.GetUserByCredentials(username, wrongPassword)
 	assert.Error(t, err)

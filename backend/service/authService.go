@@ -14,10 +14,11 @@ type AuthService interface {
 
 type AuthServiceImpl struct {
 	repo repository.UserRepository
+	jwt  config.Token
 }
 
-func NewAuthService(repo repository.UserRepository) AuthService {
-	return &AuthServiceImpl{repo: repo}
+func NewAuthService(repo repository.UserRepository, jwt config.Token) AuthService {
+	return &AuthServiceImpl{repo: repo, jwt: jwt}
 }
 
 func (s *AuthServiceImpl) Register(req dto.AuthRequest) (*dto.AuthResponse, error) {
@@ -50,8 +51,7 @@ func (s *AuthServiceImpl) Login(req dto.AuthRequest) (*dto.AuthResponse, error) 
 		return nil, err
 	}
 
-	jwt := config.JWT{}
-	accessToken, refreshToken, err := jwt.GenerateJWT(user.Username, user.Email)
+	accessToken, refreshToken, err := s.jwt.GenerateJWT(user.Username, user.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -67,13 +67,12 @@ func (s *AuthServiceImpl) Refresh(req dto.RefreshTokenRequest) (*dto.AuthRespons
 		return nil, err
 	}
 
-	jwt := config.JWT{}
-	claims, err := jwt.ValidateJWT(req.RefreshToken)
+	claims, err := s.jwt.ValidateJWT(req.RefreshToken)
 	if err != nil {
 		return nil, err
 	}
 
-	accessToken, _, err := jwt.GenerateJWT(claims.Username, claims.Email)
+	accessToken, _, err := s.jwt.GenerateJWT(claims.Username, claims.Email)
 	if err != nil {
 		return nil, err
 	}

@@ -36,6 +36,9 @@ func (m *MockUserRepository) SaveUser(username string, password string, email st
 
 func (m *MockUserRepository) GetUserByCredentials(username string, password string) (*models.User, error) {
 	args := m.Called(username, password)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).(*models.User), args.Error(1)
 }
 
@@ -46,6 +49,9 @@ func (m *MockToken) GenerateJWT(username string, email string) (string, string, 
 
 func (m *MockToken) ValidateJWT(tokenString string) (*config.Claims, error) {
 	args := m.Called(tokenString)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).(*config.Claims), args.Error(1)
 }
 
@@ -53,7 +59,8 @@ func (m *MockToken) ValidateJWT(tokenString string) (*config.Claims, error) {
 
 func TestAuthServiceRegisterCorrect(t *testing.T) {
 	mockRepo := new(MockUserRepository)
-	authService := service.NewAuthService(mockRepo)
+	mockToken := new(MockToken)
+	authService := service.NewAuthService(mockRepo, mockToken)
 
 	req := dto.AuthRequest{
 		Username: "testuser",
@@ -74,7 +81,8 @@ func TestAuthServiceRegisterCorrect(t *testing.T) {
 
 func TestAuthServiceRegisterInvalidRequest(t *testing.T) {
 	mockRepo := new(MockUserRepository)
-	authService := service.NewAuthService(mockRepo)
+	mockToken := new(MockToken)
+	authService := service.NewAuthService(mockRepo, mockToken)
 
 	req := dto.AuthRequest{
 		Username: "",
@@ -90,7 +98,8 @@ func TestAuthServiceRegisterInvalidRequest(t *testing.T) {
 
 func TestAuthServiceRegisterUserAlreadyExists(t *testing.T) {
 	mockRepo := new(MockUserRepository)
-	authService := service.NewAuthService(mockRepo)
+	mockToken := new(MockToken)
+	authService := service.NewAuthService(mockRepo, mockToken)
 
 	req := dto.AuthRequest{
 		Username: "existinguser",
@@ -111,7 +120,8 @@ func TestAuthServiceRegisterUserAlreadyExists(t *testing.T) {
 
 func TestAuthServiceRegisterEmailAlreadyExists(t *testing.T) {
 	mockRepo := new(MockUserRepository)
-	authService := service.NewAuthService(mockRepo)
+	mockToken := new(MockToken)
+	authService := service.NewAuthService(mockRepo, mockToken)
 
 	req := dto.AuthRequest{
 		Username: "existinguser",
@@ -131,7 +141,8 @@ func TestAuthServiceRegisterEmailAlreadyExists(t *testing.T) {
 
 func TestAuthServiceRegisterSaveUserError(t *testing.T) {
 	mockRepo := new(MockUserRepository)
-	authService := service.NewAuthService(mockRepo)
+	mockToken := new(MockToken)
+	authService := service.NewAuthService(mockRepo, mockToken)
 
 	req := dto.AuthRequest{
 		Username: "newuser",
@@ -156,7 +167,7 @@ func TestAuthServiceRegisterSaveUserError(t *testing.T) {
 func TestAuthServiceLoginCorrect(t *testing.T) {
 	mockRepo := new(MockUserRepository)
 	mockToken := new(MockToken)
-	authService := service.NewAuthService(mockRepo)
+	authService := service.NewAuthService(mockRepo, mockToken)
 
 	req := dto.AuthRequest{
 		Username: "testuser",
@@ -183,7 +194,8 @@ func TestAuthServiceLoginCorrect(t *testing.T) {
 
 func TestAuthServiceLoginInvalidRequest(t *testing.T) {
 	mockRepo := new(MockUserRepository)
-	authService := service.NewAuthService(mockRepo)
+	mockToken := new(MockToken)
+	authService := service.NewAuthService(mockRepo, mockToken)
 
 	req := dto.AuthRequest{
 		Username: "",
@@ -198,7 +210,8 @@ func TestAuthServiceLoginInvalidRequest(t *testing.T) {
 
 func TestAuthServiceLoginUserNotExists(t *testing.T) {
 	mockRepo := new(MockUserRepository)
-	authService := service.NewAuthService(mockRepo)
+	mockToken := new(MockToken)
+	authService := service.NewAuthService(mockRepo, mockToken)
 
 	req := dto.AuthRequest{
 		Username: "existinguser",
@@ -218,7 +231,7 @@ func TestAuthServiceLoginUserNotExists(t *testing.T) {
 func TestAuthServiceLoginJWTError(t *testing.T) {
 	mockRepo := new(MockUserRepository)
 	mockToken := new(MockToken)
-	authService := service.NewAuthService(mockRepo)
+	authService := service.NewAuthService(mockRepo, mockToken)
 
 	req := dto.AuthRequest{
 		Username: "fail",
@@ -237,7 +250,7 @@ func TestAuthServiceLoginJWTError(t *testing.T) {
 
 	assert.Nil(t, res)
 	assert.Error(t, err)
-	assert.Equal(t, assert.AnError, err.Error())
+	assert.Equal(t, assert.AnError, err)
 	mockRepo.AssertExpectations(t)
 	mockToken.AssertExpectations(t)
 }
@@ -247,7 +260,7 @@ func TestAuthServiceLoginJWTError(t *testing.T) {
 func TestAuthServiceRefreshCorrect(t *testing.T) {
 	mockRepo := new(MockUserRepository)
 	mockToken := new(MockToken)
-	authService := service.NewAuthService(mockRepo)
+	authService := service.NewAuthService(mockRepo, mockToken)
 
 	req := dto.RefreshTokenRequest{
 		RefreshToken: "valid-refresh-token",
@@ -266,7 +279,8 @@ func TestAuthServiceRefreshCorrect(t *testing.T) {
 
 func TestAuthServiceRefreshInvalidRequest(t *testing.T) {
 	mockRepo := new(MockUserRepository)
-	authService := service.NewAuthService(mockRepo)
+	mockToken := new(MockToken)
+	authService := service.NewAuthService(mockRepo, mockToken)
 
 	req := dto.RefreshTokenRequest{
 		RefreshToken: "",
@@ -281,7 +295,7 @@ func TestAuthServiceRefreshInvalidRequest(t *testing.T) {
 func TestAuthServiceRefreshInvalidToken(t *testing.T) {
 	mockRepo := new(MockUserRepository)
 	mockToken := new(MockToken)
-	authService := service.NewAuthService(mockRepo)
+	authService := service.NewAuthService(mockRepo, mockToken)
 
 	req := dto.RefreshTokenRequest{
 		RefreshToken: "invalid",
@@ -293,14 +307,14 @@ func TestAuthServiceRefreshInvalidToken(t *testing.T) {
 
 	assert.Nil(t, res)
 	assert.Error(t, err)
-	assert.Equal(t, assert.AnError, err.Error())
+	assert.Equal(t, assert.AnError, err)
 	mockToken.AssertExpectations(t)
 }
 
 func TestAuthServiceRefreshErrorGenerate(t *testing.T) {
 	mockRepo := new(MockUserRepository)
 	mockToken := new(MockToken)
-	authService := service.NewAuthService(mockRepo)
+	authService := service.NewAuthService(mockRepo, mockToken)
 
 	req := dto.RefreshTokenRequest{
 		RefreshToken: "invalid-refresh-token",
@@ -313,6 +327,6 @@ func TestAuthServiceRefreshErrorGenerate(t *testing.T) {
 
 	assert.Nil(t, res)
 	assert.Error(t, err)
-	assert.Equal(t, assert.AnError, err.Error())
+	assert.Equal(t, assert.AnError, err)
 	mockToken.AssertExpectations(t)
 }

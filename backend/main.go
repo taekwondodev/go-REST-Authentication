@@ -16,7 +16,7 @@ func main() {
 	defer config.CloseDB()
 
 	authRepo := repository.NewUserRepository(config.Db)
-	authService := service.NewAuthService(authRepo)
+	authService := service.NewAuthService(authRepo, &config.JWT{})
 	authController := controller.NewAuthController(authService)
 
 	setupPublicRoutes(authController)
