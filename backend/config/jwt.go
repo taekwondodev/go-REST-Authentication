@@ -59,6 +59,10 @@ func (j *JWT) ValidateJWT(tokenString string) (*Claims, error) {
 		return nil, jwt.ErrSignatureInvalid
 	}
 
+	if claims.ExpiresAt != nil && claims.ExpiresAt.Time.Before(time.Now()) {
+		return nil, jwt.ErrTokenExpired
+	}
+
 	return claims, nil
 }
 

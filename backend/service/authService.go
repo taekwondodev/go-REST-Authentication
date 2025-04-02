@@ -3,6 +3,7 @@ package service
 import (
 	"backend/config"
 	"backend/dto"
+	"backend/errors"
 	"backend/repository"
 )
 
@@ -23,15 +24,15 @@ func NewAuthService(repo repository.UserRepository, jwt config.Token) AuthServic
 
 func (s *AuthServiceImpl) Register(req dto.AuthRequest) (*dto.AuthResponse, error) {
 	if err := checkReqIsValid(req); err != nil {
-		return nil, err
+		return nil, errors.ErrBadRequest
 	}
 
 	if err := s.repo.CheckEmailExist(req.Email); err != nil {
-		return nil, err
+		return nil, errors.ErrEmailAlreadyExists
 	}
 
 	if err := s.repo.CheckUsernameExist(req.Username); err != nil {
-		return nil, err
+		return nil, errors.ErrUserAlreadyExists
 	}
 
 	if err := s.repo.SaveUser(req.Username, req.Password, req.Email); err != nil {
@@ -43,7 +44,7 @@ func (s *AuthServiceImpl) Register(req dto.AuthRequest) (*dto.AuthResponse, erro
 
 func (s *AuthServiceImpl) Login(req dto.AuthRequest) (*dto.AuthResponse, error) {
 	if err := checkReqIsValid(req); err != nil {
-		return nil, err
+		return nil, errors.ErrBadRequest
 	}
 
 	user, err := s.repo.GetUserByCredentials(req.Username, req.Password)
@@ -65,7 +66,7 @@ func (s *AuthServiceImpl) Login(req dto.AuthRequest) (*dto.AuthResponse, error) 
 
 func (s *AuthServiceImpl) Refresh(req dto.RefreshTokenRequest) (*dto.AuthResponse, error) {
 	if err := req.Validate(); err != nil {
-		return nil, err
+		return nil, errors.ErrBadRequest
 	}
 
 	claims, err := s.jwt.ValidateJWT(req.RefreshToken)
