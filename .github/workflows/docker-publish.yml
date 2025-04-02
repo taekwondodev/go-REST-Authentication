@@ -25,7 +25,8 @@ jobs:
 
       - name: Build services and run tests
         run: |
-          docker-compose -f docker-compose.yml up test --build --exit-code-from test
+          docker compose -f docker-compose.yml build test
+          docker compose -f docker-compose.yml up test --exit-code-from test
 
   deploy:
     needs: test  # Go on only if job "test" successfully
