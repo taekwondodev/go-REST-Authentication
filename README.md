@@ -66,6 +66,7 @@ go-REST-template/
 │   ├── config/          # Application configuration (JWT, Database, Environment Variables)
 │   ├── controller/      # Handle HTTP Requests
 │   ├── dto/             # Data Transfer Objects (Request and Response)
+│   ├── errors/          # Handle Global Errors
 │   ├── models/          # Database Models
 │   ├── repository/      # Handle Database Interaction
 │   ├── service/         # Handle Controller Business Logic

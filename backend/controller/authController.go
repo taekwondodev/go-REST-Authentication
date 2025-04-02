@@ -2,6 +2,7 @@ package controller
 
 import (
 	"backend/dto"
+	"backend/errors"
 	"backend/service"
 	"encoding/json"
 	"net/http"
@@ -28,7 +29,7 @@ func (c *AuthController) Register(w http.ResponseWriter, r *http.Request) {
 
 	res, err := c.authService.Register(req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusConflict)
+		errors.HandleHttpError(w, err)
 		return
 	}
 
@@ -49,7 +50,7 @@ func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 
 	res, err := c.authService.Login(req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusConflict)
+		errors.HandleHttpError(w, err)
 		return
 	}
 
@@ -66,13 +67,13 @@ func (c *AuthController) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		errors.HandleHttpError(w, errors.ErrBadRequest)
 		return
 	}
 
 	res, err := c.authService.Refresh(req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		errors.HandleHttpError(w, err)
 		return
 	}
 
@@ -82,7 +83,7 @@ func (c *AuthController) Refresh(w http.ResponseWriter, r *http.Request) {
 
 func checkPostMethod(w http.ResponseWriter, r *http.Request) bool {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Http Method not allowed", http.StatusMethodNotAllowed)
+		errors.HandleHttpError(w, errors.ErrHttpMethodNotAllowed)
 		return false
 	}
 
@@ -92,7 +93,7 @@ func checkPostMethod(w http.ResponseWriter, r *http.Request) bool {
 func checkReqIsValid(w http.ResponseWriter, r *http.Request, req *dto.AuthRequest) bool {
 	err := json.NewDecoder(r.Body).Decode(req)
 	if err != nil {
-		http.Error(w, "Bad request", http.StatusBadRequest)
+		errors.HandleHttpError(w, errors.ErrBadRequest)
 		return false
 	}
 

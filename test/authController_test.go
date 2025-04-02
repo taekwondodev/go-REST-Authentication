@@ -3,8 +3,8 @@ package test
 import (
 	"backend/controller"
 	"backend/dto"
+	"backend/errors"
 	"bytes"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -16,7 +16,8 @@ import (
 const endpointRegisterString = "/register"
 const endpointLoginString = "/login"
 const endpointRefreshTokenString = "/refresh"
-const httpMethodNotAllowedString = "Http Method not allowed\n"
+const badRequestString = "bad request\n"
+const httpMethodNotAllowedString = "http Method not allowed\n"
 
 type MockAuthService struct {
 	mock.Mock
@@ -71,7 +72,7 @@ func TestAuthControllerRegisterConflict(t *testing.T) {
 		Email:    emailString,
 	}
 
-	mockService.On("Register", req).Return((*dto.AuthResponse)(nil), errors.New("user already exists"))
+	mockService.On("Register", req).Return((*dto.AuthResponse)(nil), errors.ErrUserAlreadyExists)
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodPost, endpointRegisterString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword",  "email":"example@domain.com"}`))
@@ -93,7 +94,7 @@ func TestAuthControllerRegisterInvalidRequest(t *testing.T) {
 	authController.Register(w, r)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, "Bad request\n", w.Body.String())
+	assert.Equal(t, badRequestString, w.Body.String())
 }
 
 func TestAuthControllerRegisterNotPOST(t *testing.T) {
@@ -141,14 +142,14 @@ func TestAuthControllerLoginConflict(t *testing.T) {
 		Password: "testpassword",
 	}
 
-	mockService.On("Login", req).Return((*dto.AuthResponse)(nil), errors.New("invalid credentials"))
+	mockService.On("Login", req).Return((*dto.AuthResponse)(nil), errors.ErrInvalidCredentials)
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodPost, endpointLoginString, bytes.NewBufferString(`{"username":"testuser","password":"testpassword"}`))
 
 	authController.Login(w, r)
 
-	assert.Equal(t, http.StatusConflict, w.Code)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Equal(t, "invalid credentials\n", w.Body.String())
 	mockService.AssertExpectations(t)
 }
@@ -163,7 +164,7 @@ func TestAuthControllerLoginInvalidRequest(t *testing.T) {
 	authController.Login(w, r)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, "Bad request\n", w.Body.String())
+	assert.Equal(t, badRequestString, w.Body.String())
 }
 
 func TestAuthControllerLoginNotPOST(t *testing.T) {
@@ -209,15 +210,15 @@ func TestAuthControllerRefreshTokenUnauthorized(t *testing.T) {
 		RefreshToken: "invalid-refresh-token",
 	}
 
-	mockService.On("Refresh", req).Return((*dto.AuthResponse)(nil), errors.New("invalid refresh token"))
+	mockService.On("Refresh", req).Return((*dto.AuthResponse)(nil), errors.ErrInternalServer)
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodPost, endpointRefreshTokenString, bytes.NewBufferString(`{"refreshToken":"invalid-refresh-token"}`))
 
 	authController.Refresh(w, r)
 
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Equal(t, "invalid refresh token\n", w.Body.String())
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "internal server error\n", w.Body.String())
 	mockService.AssertExpectations(t)
 }
 
@@ -231,7 +232,7 @@ func TestAuthControllerRefreshTokenInvalidRequest(t *testing.T) {
 	authController.Refresh(w, r)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, "Bad Request\n", w.Body.String())
+	assert.Equal(t, badRequestString, w.Body.String())
 }
 
 func TestAuthControllerRefreshTokenNotPOST(t *testing.T) {

@@ -3,6 +3,7 @@ package test
 import (
 	"backend/config"
 	"backend/dto"
+	"backend/errors"
 	"backend/models"
 	"backend/service"
 	"testing"
@@ -108,13 +109,13 @@ func TestAuthServiceRegisterUserAlreadyExists(t *testing.T) {
 	}
 
 	mockRepo.On("CheckEmailExist", req.Email).Return(nil)
-	mockRepo.On("CheckUsernameExist", req.Username).Return(assert.AnError)
+	mockRepo.On("CheckUsernameExist", req.Username).Return(errors.ErrUserAlreadyExists)
 
 	res, err := authService.Register(req)
 
 	assert.Nil(t, res)
 	assert.Error(t, err)
-	assert.Equal(t, assert.AnError, err)
+	assert.Equal(t, errors.ErrUserAlreadyExists.Error(), err.Error())
 	mockRepo.AssertExpectations(t)
 }
 
@@ -129,13 +130,13 @@ func TestAuthServiceRegisterEmailAlreadyExists(t *testing.T) {
 		Email:    emailString,
 	}
 
-	mockRepo.On("CheckEmailExist", req.Email).Return(assert.AnError)
+	mockRepo.On("CheckEmailExist", req.Email).Return(errors.ErrEmailAlreadyExists)
 
 	res, err := authService.Register(req)
 
 	assert.Nil(t, res)
 	assert.Error(t, err)
-	assert.Equal(t, assert.AnError, err)
+	assert.Equal(t, errors.ErrEmailAlreadyExists.Error(), err.Error())
 	mockRepo.AssertExpectations(t)
 }
 
