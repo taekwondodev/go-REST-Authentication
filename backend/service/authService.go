@@ -59,7 +59,8 @@ func (s *AuthServiceImpl) Login(req dto.AuthRequest) (*dto.AuthResponse, error) 
 	return &dto.AuthResponse{
 		Message:      "Sign-In successfully!",
 		AccessToken:  accessToken,
-		RefreshToken: refreshToken}, nil
+		RefreshToken: refreshToken,
+	}, nil
 }
 
 func (s *AuthServiceImpl) Refresh(req dto.RefreshTokenRequest) (*dto.AuthResponse, error) {
@@ -79,7 +80,8 @@ func (s *AuthServiceImpl) Refresh(req dto.RefreshTokenRequest) (*dto.AuthRespons
 
 	return &dto.AuthResponse{
 		Message:     "Update token successfully!",
-		AccessToken: accessToken}, nil
+		AccessToken: accessToken,
+	}, nil
 }
 
 func checkReqIsValid(req dto.AuthRequest) error {

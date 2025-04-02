@@ -5,6 +5,59 @@ You can use it in two ways:
 - **Authentication Microservice**
 - **Starting point for a backend**
 
+## API Endpoints
+
+### 1. **Sign Up**
+- **Endpoint:** `POST /register`
+- **Request Body:**
+  ```json
+  {
+    "username": "example_user",
+    "email": "example@example.com",
+    "password": "password123"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "message": "Sign-Up successfully!"
+  }
+  ```
+
+### 2. **Sign In**
+- **Endpoint:** `POST /login`
+- **Request Body:**
+  ```json
+  {
+    "username": "example_user",
+    "password": "password123"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "message": "Sign-In successfully!",
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "dXNlcm5hbWU6ZXhhbXBsZV91c2Vy..."
+  }
+  ```
+
+  ### 3. **Refresh Token**
+- **Endpoint:** `POST /refresh`
+- **Request Body:**
+  ```json
+  {
+    "refreshToken": "dXNlcm5hbWU6ZXhhbXBsZV91c2Vy..."
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "message": "Update token successfully!",
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+  ```
+
 ## Project Structure
 
 ```
@@ -25,7 +78,7 @@ go-REST-template/
 ├── docker-compose.yml   
 ```
 
-## Authentication with JWT
+## JWT
 
 When an user sign in, the server respond with a message, an access token and a refresh token. The access token expires in 1 hour, the refresh token expires in 7 days.
 
@@ -33,7 +86,7 @@ If the access token is expired, there is the refresh endpoint to get a new acces
 
 ## Database
 
-I use postgreSQL for the project. At the start of your container instance will run the migration script. It contains a table for the user.
+I use postgreSQL for the project. At the start of your container instance will run the migration script. It contains a table for the users.
 
 ## Docker
 
@@ -51,19 +104,31 @@ I use docker to manage dependencies. I divided the project into 4 containers: ba
    ```bash
    git clone https://github.com/taekwondodev/go-REST-Template.git
    ```
-2. Create a file ".env" in the main directory and insert the value of your instances:
+2. Open the terminal and create the Certificates for SSL mode for postgreSQL:
+
+   ```bash
+   mkdir -p postgres/ssl && cd postgres/ssl
+   openssl req -new -x509 -days 365 -nodes -text -out server.crt -keyout server.key -subj "/CN=postgres"
+   chmod 600 server.key
+   ```
+3. Open the terminal and run the command to generate JWT_SECRET and copy it:
+
+   ```bash
+   openssl rand -hex 32
+   ```
+3. Create a file ".env" in the main directory and insert the value of your instances:
    
    ```txt
-   JWT_SECRET=default 
-   DB_HOST=postgres                                         # Service Name in Docker Compose
+   JWT_SECRET=default
+   DB_HOST=postgres                                        
    DB_PORT=5432
    POSTGRES_USER=postgres
    POSTGRES_PASSWORD=postgres
-   POSTGRES_DB=go                                           # Database Name
-   POSTGRES_URL=jdbc:postgresql://postgres:5432/go
-   DB_SSLMODE=disable
+   POSTGRES_DB=go                                           
+   POSTGRES_URL=jdbc:postgresql://postgres:5432/go?sslmode=require
+   DB_SSLMODE=require
    ```
-3. Open the terminal in the main directory and run the command:
+4. Open the terminal in the main directory and run the command:
    
    ```bash
    docker compose up -d

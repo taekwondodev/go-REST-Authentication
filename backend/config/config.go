@@ -6,15 +6,16 @@ import (
 	"os"
 )
 
-var JwtSecret string
+var JwtSecret []byte
 var DbURL string
 var DbConnStr string
 
 func LoadEnv() {
-	JwtSecret = os.Getenv("JWT_SECRET")
-	if JwtSecret == "" {
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
 		log.Fatal("JWT_SECRET not defined")
 	}
+	JwtSecret = []byte(jwtSecret)
 
 	DbConnStr = fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
