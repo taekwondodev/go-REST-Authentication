@@ -8,9 +8,7 @@ services:
       - run-tests
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ghcr.io/taekwondodev/go-rest-auth:latest
     container_name: backend
     ports:
       - "8080:8080"
