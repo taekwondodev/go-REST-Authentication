@@ -23,10 +23,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: Build services and run tests
-        run: |
-          docker compose -f docker-compose.yml build test
-          docker compose -f docker-compose.yml up test --exit-code-from test
+      - name: Build test image
+        run: docker build -f Dockerfile.test -t myapp-test .
+
+      - name: Run tests
+        run: docker run --rm myapp-test
 
   deploy:
     needs: test  # Go on only if job "test" successfully
