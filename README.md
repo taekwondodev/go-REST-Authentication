@@ -1,5 +1,5 @@
 # go-REST-Authentication
-[![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go)](https://golang.org)
+[![Go](https://img.shields.io/badge/Go-1.24.1+-00ADD8?logo=go)](https://golang.org)
 
 Auth Microservice/Template for REST API in Go with JWT, Docker and PostgreSQL.
 
