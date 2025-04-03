@@ -11,6 +11,7 @@ type AuthService interface {
 	Register(req dto.AuthRequest) (*dto.AuthResponse, error)
 	Login(req dto.AuthRequest) (*dto.AuthResponse, error)
 	Refresh(req dto.RefreshTokenRequest) (*dto.AuthResponse, error)
+	HealthCheck() (*dto.HealthResponse, error)
 }
 
 type AuthServiceImpl struct {
@@ -82,6 +83,15 @@ func (s *AuthServiceImpl) Refresh(req dto.RefreshTokenRequest) (*dto.AuthRespons
 	return &dto.AuthResponse{
 		Message:     "Update token successfully!",
 		AccessToken: accessToken,
+	}, nil
+}
+
+func (s *AuthServiceImpl) HealthCheck() (*dto.HealthResponse, error) {
+	if err := config.Db.Ping(); err != nil {
+		return nil, errors.ErrDbUnreacheable
+	}
+	return &dto.HealthResponse{
+		Status: "OK",
 	}, nil
 }
 

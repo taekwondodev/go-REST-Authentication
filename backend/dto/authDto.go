@@ -18,12 +18,3 @@ type AuthResponse struct {
 	AccessToken  string `json:"accessToken,omitzero"`
 	RefreshToken string `json:"refreshToken,omitzero"`
 }
-
-type RefreshTokenRequest struct {
-	RefreshToken string `json:"refreshToken" validate:"required"`
-}
-
-func (r *RefreshTokenRequest) Validate() error {
-	validate := validator.New()
-	return validate.Struct(r)
-}
