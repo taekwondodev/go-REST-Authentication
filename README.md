@@ -78,7 +78,7 @@ Auth Microservice/Template for REST API in Go with JWT, Docker and PostgreSQL.
   # Download the file
   curl -O https://raw.githubusercontent.com/taekwondodev/go-REST-Authentication/microservice/docker-compose.yml
   ```
-  Or:
+  Or
 
   Clone the project:
    
