@@ -168,6 +168,7 @@ go-REST-template/
 │   ├── controller/      # Handle HTTP Requests
 │   ├── dto/             # Data Transfer Objects (Request and Response)
 │   ├── errors/          # Handle Global Errors
+│   ├── middleware/      # Middleware
 │   ├── models/          # Database Models
 │   ├── repository/      # Handle Database Interaction
 │   ├── service/         # Handle Controller Business Logic
