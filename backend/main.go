@@ -29,4 +29,5 @@ func setupPublicRoutes(authController *controller.AuthController) {
 	http.HandleFunc("/register", authController.Register)
 	http.HandleFunc("/login", authController.Login)
 	http.HandleFunc("/refresh", authController.Refresh)
+	http.HandleFunc("/healthz", authController.HealthCheck)
 }

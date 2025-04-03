@@ -56,6 +56,21 @@ Auth Microservice/Template for REST API in Go with JWT, Docker and PostgreSQL.
   }
   ```
 
+  ### 4. **Health Check**
+- **Endpoint:** `GET /healthz`
+- **Request Body:**
+  ```json
+  {
+
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "status": "OK"
+  }
+  ```
+
 ## Features
 - JWT Authentication (Access + Refresh tokens)
 - PostgreSQL database integration

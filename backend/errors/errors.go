@@ -15,6 +15,7 @@ var (
 	ErrHttpMethodNotAllowed = errors.New("http Method not allowed")
 	ErrBadRequest           = errors.New("bad request")
 	ErrInternalServer       = errors.New("internal server error")
+	ErrDbUnreacheable       = errors.New("database unreachable")
 )
 
 func HandleHttpError(w http.ResponseWriter, err error) {
@@ -29,6 +30,8 @@ func HandleHttpError(w http.ResponseWriter, err error) {
 		http.Error(w, err.Error(), http.StatusMethodNotAllowed)
 	case ErrBadRequest:
 		http.Error(w, err.Error(), http.StatusBadRequest)
+	case ErrDbUnreacheable:
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	default:
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

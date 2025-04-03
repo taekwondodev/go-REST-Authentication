@@ -81,6 +81,16 @@ func (c *AuthController) Refresh(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
+func (c *AuthController) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	res, err := c.authService.HealthCheck()
+	if err != nil {
+		errors.HandleHttpError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(res)
+}
+
 func checkPostMethod(w http.ResponseWriter, r *http.Request) bool {
 	if r.Method != http.MethodPost {
 		errors.HandleHttpError(w, errors.ErrHttpMethodNotAllowed)
