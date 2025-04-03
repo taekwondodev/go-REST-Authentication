@@ -73,10 +73,19 @@ Auth Microservice/Template for REST API in Go with JWT, Docker and PostgreSQL.
 
 ### Microservice
 
-1. You can use the docker-compose.yml file:
+1. Download the docker-compose.yml and the migration script files:
   ```bash
-  # Download the file
+  # Create a directory for the project
+  mkdir auth && cd auth
+
+  # Download the compose file
   curl -O https://raw.githubusercontent.com/taekwondodev/go-REST-Authentication/microservice/docker-compose.yml
+
+  # Create the migration directory
+  mkdir -p migrations && cd migrations
+
+  # Download the script sql file
+  curl -O https://raw.githubusercontent.com/taekwondodev/go-REST-Authentication/microservice/migrations/V1__Create_User_table.sql
   ```
   Or
 
