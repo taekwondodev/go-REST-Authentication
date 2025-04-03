@@ -1,9 +1,7 @@
 # go-REST-Authentication
-This is a Template for REST API in Go with JWT, Docker and a Database.
+[![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go)](https://golang.org)
 
-You can use it in two ways:
-- **Authentication Microservice**
-- **Starting point for a backend**
+Auth Microservice/Template for REST API in Go with JWT, Docker and PostgreSQL.
 
 ## API Endpoints
 
@@ -58,6 +56,85 @@ You can use it in two ways:
   }
   ```
 
+## Features
+- JWT Authentication (Access + Refresh tokens)
+- PostgreSQL database integration
+- Docker-ready configuration
+- Automated migrations with Flyway
+- Unit testing setup
+- SSL-secured PostgreSQL connection
+
+## Requirements
+
+- Install [Docker](https://docs.docker.com/engine/install/)
+- Install [Go](https://go.dev/dl/) (optional, only for local development)
+
+## Usage
+
+### Microservice
+
+1. You can use the docker-compose.yml file:
+  ```bash
+  # Download the file
+  curl -O https://raw.githubusercontent.com/taekwondodev/go-REST-Authentication/microservice/docker-compose.yml
+  ```
+  Or:
+
+  Clone the project:
+   
+  ```bash
+  git clone https://github.com/taekwondodev/go-REST-Template.git
+  ```
+
+### Template
+
+  Clone the project:
+
+  ```bash
+  git clone https://github.com/taekwondodev/go-REST-Template.git
+  ```
+
+### Configuration
+1. Open the terminal in the main directory and create the Certificates for SSL mode for postgreSQL:
+
+  ```bash
+  mkdir -p postgres/ssl && cd postgres/ssl
+  openssl req -new -x509 -days 3650 -nodes -text -out server.crt -keyout server.key -subj "/CN=postgres"
+  chmod 600 server.key
+  cd ../..
+  ```
+2. Run the command to generate JWT_SECRET and copy it:
+
+  ```bash
+  openssl rand -hex 32
+  ```
+3. Create a file ".env" in the main directory and insert the value of your instances:
+   
+  ```ini
+  # Authentication
+  JWT_SECRET=your_generated_hex_here  # Required for token signing
+
+  # Database Configuration
+
+  DB_HOST=postgres                    # Container name (don't change for compose)
+  DB_PORT=5432                        # Default PostgreSQL port
+  POSTGRES_USER=your_db_user          # Database username
+  POSTGRES_PASSWORD=your_db_password  # Database password
+  POSTGRES_DB=your_db_name            # Database name
+
+  # SSL Settings
+  DB_SSLMODE=require                  
+  POSTGRES_URL=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${POSTGRES_DB}?sslmode=${DB_SSLMODE}
+  ```
+
+### Deployment
+
+Run the command in the main directory:
+   
+  ```bash
+  docker compose up -d
+  ```
+
 ## Project Structure
 
 ```
@@ -79,69 +156,21 @@ go-REST-template/
 ├── docker-compose.yml   
 ```
 
-## JWT
-
-When an user sign in, the server respond with a message, an access token and a refresh token. The access token expires in 1 hour, the refresh token expires in 7 days.
-
-If the access token is expired, there is the refresh endpoint to get a new access token.
-
-## Database
-
-I use postgreSQL for the project. At the start of your container instance will run the migration script. It contains a table for the users.
-
-## Docker
-
-I use docker to manage dependencies. I divided the project into 4 containers: backend, test, postgres, flyway. So every container will run indipendently from the others.
-
-## Requirements
-
-- Install [Docker](https://docs.docker.com/engine/install/)
-- Install [Go](https://go.dev/dl/) (optional, only for local development)
-
-## Usage
-
-1. Clone the project:
-   
-   ```bash
-   git clone https://github.com/taekwondodev/go-REST-Template.git
-   ```
-2. Open the terminal and create the Certificates for SSL mode for postgreSQL:
-
-   ```bash
-   mkdir -p postgres/ssl && cd postgres/ssl
-   openssl req -new -x509 -days 365 -nodes -text -out server.crt -keyout server.key -subj "/CN=postgres"
-   chmod 600 server.key
-   ```
-3. Open the terminal and run the command to generate JWT_SECRET and copy it:
-
-   ```bash
-   openssl rand -hex 32
-   ```
-3. Create a file ".env" in the main directory and insert the value of your instances:
-   
-   ```txt
-   JWT_SECRET=default
-   DB_HOST=postgres                                        
-   DB_PORT=5432
-   POSTGRES_USER=postgres
-   POSTGRES_PASSWORD=postgres
-   POSTGRES_DB=go                                           
-   POSTGRES_URL=jdbc:postgresql://postgres:5432/go?sslmode=require
-   DB_SSLMODE=require
-   ```
-4. Open the terminal in the main directory and run the command:
-   
-   ```bash
-   docker compose up -d
-   ```
+**Note**: If you run this repo as a Microservice you can skip this.
 
 ## Testing
 
 To test the repository with automated test run the command in the main directory:
 
 ```bash
-docker compose up test
+# Build the image
+docker build -f Dockerfile.test -t myapp-test .
+
+# Execute
+docker run --rm myapp-test
 ```
+
+**Note**: If you run this repo as a Microservice you can skip this.
 
 ## Acknowledgments
 
