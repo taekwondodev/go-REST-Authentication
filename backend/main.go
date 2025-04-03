@@ -33,12 +33,12 @@ func main() {
 func setupPublicRoutes(authController *controller.AuthController) *http.ServeMux {
 	router := http.NewServeMux()
 	// Auth Routes
-	http.HandleFunc("/register", authController.Register)
-	http.HandleFunc("/login", authController.Login)
-	http.HandleFunc("/refresh", authController.Refresh)
+	router.HandleFunc("/register", authController.Register)
+	router.HandleFunc("/login", authController.Login)
+	router.HandleFunc("/refresh", authController.Refresh)
 
 	// System Routes
-	http.HandleFunc("/healthz", authController.HealthCheck)
+	router.HandleFunc("/healthz", authController.HealthCheck)
 
 	return router
 }
