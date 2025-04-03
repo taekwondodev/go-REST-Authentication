@@ -9,24 +9,26 @@ RUN go mod download
 
 COPY . .
 
+# Create the user not root (UID/GID 1000)
+RUN echo "nonroot:x:1000:1000:nonroot:/:" > /etc/passwd && \
+    echo "nonroot:x:1000:" > /etc/group && \
+    chmod 644 /etc/passwd /etc/group
+
+# Build the multi-arch binary
 ARG TARGETOS TARGETARCH
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o main .
 
 # Runtime
-FROM --platform=$TARGETPLATFORM debian:bookworm-slim AS runtime
+FROM --platform=$TARGETPLATFORM scratch AS runtime
 
 WORKDIR /app
 
 COPY --from=builder /app/main .
+COPY --from=builder /etc/passwd /etc/passwd
+COPY --from=builder /etc/group /etc/group
+
+USER nonroot:nonroot
 
 EXPOSE 8080
-
-# Create a non-root user and group
-RUN groupadd -r nonroot && \
-    useradd --no-log-init -r -g nonroot nonroot && \
-    chown -R nonroot:nonroot /app
-
-# Switch to the non-root user
-USER nonroot
 
 CMD ["./main"]
