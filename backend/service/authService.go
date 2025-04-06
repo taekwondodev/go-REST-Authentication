@@ -94,13 +94,14 @@ func (s *AuthServiceImpl) HealthCheck() (*dto.HealthResponse, error) {
 	defer cancel()
 
 	if err := config.Db.PingContext(ctx); err != nil {
-		if isSSLerror(err) {
+		switch {
+		case isSSLerror(err):
 			return nil, errors.ErrDbSSLHandshakeFailed
-		}
-		if ctx.Err() == context.DeadlineExceeded {
+		case ctx.Err() == context.DeadlineExceeded:
 			return nil, errors.ErrDbTimeout
+		default:
+			return nil, errors.ErrDbUnreacheable
 		}
-		return nil, errors.ErrDbUnreacheable
 	}
 
 	return &dto.HealthResponse{
