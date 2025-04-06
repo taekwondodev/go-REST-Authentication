@@ -16,6 +16,8 @@ var (
 	ErrBadRequest           = errors.New("bad request")
 	ErrInternalServer       = errors.New("internal server error")
 	ErrDbUnreacheable       = errors.New("database unreachable")
+	ErrDbSSLHandshakeFailed = errors.New("database ssl handshake failed")
+	ErrDbTimeout            = errors.New("database timeout")
 )
 
 func HandleHttpError(w http.ResponseWriter, err error) {
@@ -32,6 +34,10 @@ func HandleHttpError(w http.ResponseWriter, err error) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	case ErrDbUnreacheable:
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+	case ErrDbSSLHandshakeFailed:
+		http.Error(w, err.Error(), http.StatusBadGateway)
+	case ErrDbTimeout:
+		http.Error(w, err.Error(), http.StatusGatewayTimeout)
 	default:
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

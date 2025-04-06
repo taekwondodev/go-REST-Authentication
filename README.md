@@ -1,7 +1,7 @@
 # go-REST-Authentication
 [![Go](https://img.shields.io/badge/Go-1.24.1+-00ADD8?logo=go)](https://golang.org)
 
-Auth Microservice/Template for REST API in Go with JWT, Docker and PostgreSQL.
+Auth Microservice/Template for REST API in Go with JWT, Docker, PostgreSQL and End-to-End TLS Encryption
 
 ## API Endpoints
 
@@ -67,11 +67,11 @@ Auth Microservice/Template for REST API in Go with JWT, Docker and PostgreSQL.
 
 ## Features
 - JWT Authentication (Access + Refresh tokens)
-- PostgreSQL database integration
-- Docker-ready configuration
-- Automated migrations with Flyway
-- Unit testing setup
-- SSL-secured PostgreSQL connection
+- PostgreSQL with TLS 1.3 (verify-full mode)  
+- Docker with internal network isolation 
+- Flyway migrations with certificate verification  
+- Unit testing  
+- Hardware-grade encryption for database connections 
 
 ## Requirements
 
@@ -117,8 +117,21 @@ Auth Microservice/Template for REST API in Go with JWT, Docker and PostgreSQL.
 
   ```bash
   mkdir -p postgres/ssl && cd postgres/ssl
-  openssl req -new -x509 -days 3650 -nodes -text -out server.crt -keyout server.key -subj "/CN=postgres"
+
+  openssl req -new -x509 -days 3650 -nodes -newkey rsa:2048 \
+  -keyout ca.key -out ca.crt -subj "/CN=PostgreSQL Internal CA"
+
+  openssl req -new -nodes -newkey rsa:2048 \
+  -keyout server.key -out server.csr \
+  -config openssl.cnf
+
+  openssl x509 -req -in server.csr -days 3650 \
+  -CA ca.crt -CAkey ca.key -CAcreateserial \
+  -out server.crt -extfile openssl.cnf -extensions req_ext
+
   chmod 600 server.key
+  chmod 644 server.crt ca.crt
+  rm server.csr
   cd ../..
   ```
 2. Run the command to generate JWT_SECRET and copy it:
@@ -140,9 +153,10 @@ Auth Microservice/Template for REST API in Go with JWT, Docker and PostgreSQL.
   POSTGRES_PASSWORD=your_db_password  # Database password
   POSTGRES_DB=your_db_name            # Database name
 
-  # SSL Settings
-  DB_SSLMODE=require                  
-  POSTGRES_URL=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${POSTGRES_DB}?sslmode=${DB_SSLMODE}
+  # SSL Settings 
+  DB_SSLMODE=verify-full
+  DB_SSLROOTCERT=/etc/ssl/certs/postgres-ca.crt              
+  POSTGRES_URL=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${POSTGRES_DB}?sslmode=verify-full&sslrootcert=/flyway/conf/ca.crt
   ```
 
 ### Deployment
@@ -170,6 +184,8 @@ go-REST-template/
 │   ├── go.mod           
 │   ├── go.sum           
 │   ├── main.go  
+├── migrations/          # SQL Script Migrations
+├── postgres/            # SSL Certificates  
 ├── test/                # Unit Testing    
 ├── Dockerfile.test        
 ├── docker-compose.yml   

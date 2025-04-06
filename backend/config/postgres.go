@@ -1,8 +1,11 @@
 package config
 
 import (
+	"context"
 	"database/sql"
 	"log"
+	"strings"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -17,7 +20,17 @@ func InitDB() {
 		log.Fatal("Error connection to database: ", err)
 	}
 
-	if err = Db.Ping(); err != nil {
+	Db.SetMaxOpenConns(25)
+	Db.SetMaxIdleConns(10)
+	Db.SetConnMaxLifetime(5 * time.Minute)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err = Db.PingContext(ctx); err != nil {
+		if strings.Contains(err.Error(), "certificate") {
+			log.Fatal("SSL verification failed: ", err)
+		}
 		log.Fatal("Error ping to database:", err)
 	}
 

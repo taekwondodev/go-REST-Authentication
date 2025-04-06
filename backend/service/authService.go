@@ -5,6 +5,9 @@ import (
 	"backend/dto"
 	"backend/errors"
 	"backend/repository"
+	"context"
+	"strings"
+	"time"
 )
 
 type AuthService interface {
@@ -87,14 +90,32 @@ func (s *AuthServiceImpl) Refresh(req dto.RefreshTokenRequest) (*dto.AuthRespons
 }
 
 func (s *AuthServiceImpl) HealthCheck() (*dto.HealthResponse, error) {
-	if err := config.Db.Ping(); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	if err := config.Db.PingContext(ctx); err != nil {
+		if isSSLerror(err) {
+			return nil, errors.ErrDbSSLHandshakeFailed
+		}
+		if ctx.Err() == context.DeadlineExceeded {
+			return nil, errors.ErrDbTimeout
+		}
 		return nil, errors.ErrDbUnreacheable
 	}
+
 	return &dto.HealthResponse{
-		Status: "OK",
+		Status:   "OK",
+		Database: "Connected",
+		SslMode:  "verify-full",
 	}, nil
 }
 
 func checkReqIsValid(req dto.AuthRequest) error {
 	return req.Validate()
+}
+
+func isSSLerror(err error) bool {
+	return strings.Contains(err.Error(), "SSL") ||
+		strings.Contains(err.Error(), "certificate") ||
+		strings.Contains(err.Error(), "TLS")
 }

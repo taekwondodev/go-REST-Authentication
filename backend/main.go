@@ -22,11 +22,11 @@ func main() {
 
 	router := setupPublicRoutes(authController)
 	server := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":80",
 		Handler: middleware.TrustProxyMiddleware(router),
 	}
 
-	log.Println("Server listening on the port 8080...")
+	log.Println("Server listening on the port 80...")
 	log.Fatal(server.ListenAndServe())
 }
 
