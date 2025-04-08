@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"backend/errors"
+	customerrors "backend/customErrors"
 	"backend/models"
 	"database/sql"
 
@@ -71,7 +71,7 @@ func (r *UserRepositoryImpl) GetUserByCredentials(username string, password stri
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errors.ErrUserNotFound
+			return nil, customerrors.ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (r *UserRepositoryImpl) GetUserByCredentials(username string, password stri
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
 		if err == bcrypt.ErrMismatchedHashAndPassword {
-			return nil, errors.ErrInvalidCredentials
+			return nil, customerrors.ErrInvalidCredentials
 		}
 		return nil, err
 	}

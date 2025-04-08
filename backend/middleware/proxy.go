@@ -2,8 +2,8 @@ package middleware
 
 import "net/http"
 
-func TrustProxyMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func TrustProxyMiddleware(next HandlerFunc) HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		// 1. Check if the request is coming from a trusted proxy
 		if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
 			r.URL.Scheme = proto
@@ -15,6 +15,16 @@ func TrustProxyMiddleware(next http.Handler) http.Handler {
 		}
 
 		// 3. Next handler
-		next.ServeHTTP(w, r)
-	})
+		return next(w, r)
+	}
+}
+
+// Chain middleware
+func Chain(middlewares ...func(HandlerFunc) HandlerFunc) func(HandlerFunc) HandlerFunc {
+	return func(final HandlerFunc) HandlerFunc {
+		for i := len(middlewares) - 1; i >= 0; i-- {
+			final = middlewares[i](final)
+		}
+		return final
+	}
 }

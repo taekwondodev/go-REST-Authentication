@@ -2,8 +2,8 @@ package service
 
 import (
 	"backend/config"
+	customerrors "backend/customErrors"
 	"backend/dto"
-	"backend/errors"
 	"backend/repository"
 	"context"
 	"strings"
@@ -28,15 +28,15 @@ func NewAuthService(repo repository.UserRepository, jwt config.Token) AuthServic
 
 func (s *AuthServiceImpl) Register(req dto.AuthRequest) (*dto.AuthResponse, error) {
 	if err := checkReqIsValid(req); err != nil {
-		return nil, errors.ErrBadRequest
+		return nil, customerrors.ErrBadRequest
 	}
 
 	if err := s.repo.CheckEmailExist(req.Email); err != nil {
-		return nil, errors.ErrEmailAlreadyExists
+		return nil, customerrors.ErrEmailAlreadyExists
 	}
 
 	if err := s.repo.CheckUsernameExist(req.Username); err != nil {
-		return nil, errors.ErrUserAlreadyExists
+		return nil, customerrors.ErrUserAlreadyExists
 	}
 
 	if err := s.repo.SaveUser(req.Username, req.Password, req.Email); err != nil {
@@ -48,7 +48,7 @@ func (s *AuthServiceImpl) Register(req dto.AuthRequest) (*dto.AuthResponse, erro
 
 func (s *AuthServiceImpl) Login(req dto.AuthRequest) (*dto.AuthResponse, error) {
 	if err := checkReqIsValid(req); err != nil {
-		return nil, errors.ErrBadRequest
+		return nil, customerrors.ErrBadRequest
 	}
 
 	user, err := s.repo.GetUserByCredentials(req.Username, req.Password)
@@ -70,7 +70,7 @@ func (s *AuthServiceImpl) Login(req dto.AuthRequest) (*dto.AuthResponse, error) 
 
 func (s *AuthServiceImpl) Refresh(req dto.RefreshTokenRequest) (*dto.AuthResponse, error) {
 	if err := req.Validate(); err != nil {
-		return nil, errors.ErrBadRequest
+		return nil, customerrors.ErrBadRequest
 	}
 
 	claims, err := s.jwt.ValidateJWT(req.RefreshToken)
@@ -96,11 +96,11 @@ func (s *AuthServiceImpl) HealthCheck() (*dto.HealthResponse, error) {
 	if err := config.Db.PingContext(ctx); err != nil {
 		switch {
 		case isSSLerror(err):
-			return nil, errors.ErrDbSSLHandshakeFailed
+			return nil, customerrors.ErrDbSSLHandshakeFailed
 		case ctx.Err() == context.DeadlineExceeded:
-			return nil, errors.ErrDbTimeout
+			return nil, customerrors.ErrDbTimeout
 		default:
-			return nil, errors.ErrDbUnreacheable
+			return nil, customerrors.ErrDbUnreacheable
 		}
 	}
 
