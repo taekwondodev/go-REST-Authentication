@@ -5,65 +5,9 @@ Auth Microservice/Template for REST API in Go with JWT, Docker, PostgreSQL and E
 
 ## API Endpoints
 
-### 1. **Sign Up**
-- **Endpoint:** `POST /register`
-- **Request Body:**
-  ```json
-  {
-    "username": "example_user",
-    "email": "example@example.com",
-    "password": "password123"
-  }
-  ```
-- **Response:**
-  ```json
-  {
-    "message": "Sign-Up successfully!"
-  }
-  ```
+[![Open in Swagger Editor](https://img.shields.io/badge/Swagger-Editor-%23Clojure?style=for-the-badge&logo=swagger)](https://editor.swagger.io/?url=https://raw.githubusercontent.com/taekwondodev/go-REST-Authentication/backend/api/openapi.yaml)
 
-### 2. **Sign In**
-- **Endpoint:** `POST /login`
-- **Request Body:**
-  ```json
-  {
-    "username": "example_user",
-    "password": "password123"
-  }
-  ```
-- **Response:**
-  ```json
-  {
-    "message": "Sign-In successfully!",
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refreshToken": "dXNlcm5hbWU6ZXhhbXBsZV91c2Vy..."
-  }
-  ```
-
-  ### 3. **Refresh Token**
-- **Endpoint:** `POST /refresh`
-- **Request Body:**
-  ```json
-  {
-    "refreshToken": "dXNlcm5hbWU6ZXhhbXBsZV91c2Vy..."
-  }
-  ```
-- **Response:**
-  ```json
-  {
-    "message": "Update token successfully!",
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
-  ```
-
-  ### 4. **Health Check**
-- **Endpoint:** `GET /healthz`
-- **Response:**
-  ```json
-  {
-    "status": "OK"
-  }
-  ```
+- [Raw OpenAPI Spec](./backend/api/openapi.yaml)
 
 ## Features
 - JWT Authentication (Access + Refresh tokens)
