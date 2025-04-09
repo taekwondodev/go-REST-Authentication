@@ -18,13 +18,3 @@ func TrustProxyMiddleware(next HandlerFunc) HandlerFunc {
 		return next(w, r)
 	}
 }
-
-// Chain middleware
-func Chain(middlewares ...func(HandlerFunc) HandlerFunc) func(HandlerFunc) HandlerFunc {
-	return func(final HandlerFunc) HandlerFunc {
-		for i := len(middlewares) - 1; i >= 0; i-- {
-			final = middlewares[i](final)
-		}
-		return final
-	}
-}

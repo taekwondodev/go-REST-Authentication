@@ -18,10 +18,11 @@ func SetupRoutes(authController *controller.AuthController) *http.ServeMux {
 }
 
 func applyMiddleware(h middleware.HandlerFunc) http.HandlerFunc {
-	return middleware.ErrorHandler(middleware.Chain(
-		middleware.TrustProxyMiddleware,
-		middleware.LoggingMiddleware,
-	)(h))
+	return middleware.ErrorHandler(
+		middleware.TrustProxyMiddleware(
+			middleware.LoggingMiddleware(h),
+		),
+	)
 }
 
 func setupAuthRoutes(authController *controller.AuthController) {
