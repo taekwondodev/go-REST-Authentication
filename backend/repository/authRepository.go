@@ -26,13 +26,27 @@ func NewUserRepository(db *sql.DB) UserRepository {
 func (r *UserRepositoryImpl) CheckUsernameExist(username string) error {
 	var exists bool
 	query := "SELECT EXISTS(SELECT 1 FROM users WHERE username=$1)"
-	return r.db.QueryRow(query, username).Scan(&exists)
+	err := r.db.QueryRow(query, username).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return customerrors.ErrUserAlreadyExists
+	}
+	return nil
 }
 
 func (r *UserRepositoryImpl) CheckEmailExist(email string) error {
 	var exists bool
 	query := "SELECT EXISTS(SELECT 1 FROM users WHERE email=$1)"
-	return r.db.QueryRow(query, email).Scan(&exists)
+	err := r.db.QueryRow(query, email).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return customerrors.ErrEmailAlreadyExists
+	}
+	return nil
 }
 
 func (r *UserRepositoryImpl) SaveUser(username string, password string, email string) error {

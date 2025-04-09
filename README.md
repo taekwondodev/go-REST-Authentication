@@ -71,7 +71,8 @@ Auth Microservice/Template for REST API in Go with JWT, Docker, PostgreSQL and E
 - Docker with internal network isolation 
 - Flyway migrations with certificate verification  
 - Unit testing  
-- Hardware-grade encryption for database connections 
+- Hardware-grade encryption for database connections
+- Proxy and Logging Middleware
 
 ## Requirements
 
@@ -172,10 +173,11 @@ Run the command in the main directory:
 ```
 go-REST-template/
 ├── backend/
+│   ├── api/             # Handle Server and Router Configs
 │   ├── config/          # Application configuration (JWT, Database, Environment Variables)
 │   ├── controller/      # Handle HTTP Requests
+│   ├── customErrors/    # Handle Custom Errors
 │   ├── dto/             # Data Transfer Objects (Request and Response)
-│   ├── errors/          # Handle Global Errors
 │   ├── middleware/      # Middleware
 │   ├── models/          # Database Models
 │   ├── repository/      # Handle Database Interaction

@@ -27,16 +27,16 @@ func NewAuthService(repo repository.UserRepository, jwt config.Token) AuthServic
 }
 
 func (s *AuthServiceImpl) Register(req dto.AuthRequest) (*dto.AuthResponse, error) {
-	if err := checkReqIsValid(req); err != nil {
+	if err := req.Validate(); err != nil {
 		return nil, customerrors.ErrBadRequest
 	}
 
 	if err := s.repo.CheckEmailExist(req.Email); err != nil {
-		return nil, customerrors.ErrEmailAlreadyExists
+		return nil, err
 	}
 
 	if err := s.repo.CheckUsernameExist(req.Username); err != nil {
-		return nil, customerrors.ErrUserAlreadyExists
+		return nil, err
 	}
 
 	if err := s.repo.SaveUser(req.Username, req.Password, req.Email); err != nil {
@@ -47,7 +47,7 @@ func (s *AuthServiceImpl) Register(req dto.AuthRequest) (*dto.AuthResponse, erro
 }
 
 func (s *AuthServiceImpl) Login(req dto.AuthRequest) (*dto.AuthResponse, error) {
-	if err := checkReqIsValid(req); err != nil {
+	if err := req.Validate(); err != nil {
 		return nil, customerrors.ErrBadRequest
 	}
 
@@ -109,10 +109,6 @@ func (s *AuthServiceImpl) HealthCheck() (*dto.HealthResponse, error) {
 		Database: "Connected",
 		SslMode:  "verify-full",
 	}, nil
-}
-
-func checkReqIsValid(req dto.AuthRequest) error {
-	return req.Validate()
 }
 
 func isSSLerror(err error) bool {

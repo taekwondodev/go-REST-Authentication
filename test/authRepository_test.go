@@ -1,6 +1,7 @@
 package test
 
 import (
+	customerrors "backend/customErrors"
 	"backend/repository"
 	"database/sql"
 	"testing"
@@ -26,7 +27,8 @@ func TestCheckUsernameExistCorrect(t *testing.T) {
 	mock.ExpectQuery(existQuery).WithArgs(username).WillReturnRows(rows)
 
 	err := repo.CheckUsernameExist(username)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.Equal(t, customerrors.ErrUserAlreadyExists, err)
 }
 
 func TestCheckUsernameExistNotFound(t *testing.T) {
@@ -67,7 +69,8 @@ func TestCheckEmailExistCorrect(t *testing.T) {
 	mock.ExpectQuery(existQuery).WithArgs(emailString).WillReturnRows(rows)
 
 	err := repo.CheckEmailExist(emailString)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.Equal(t, customerrors.ErrEmailAlreadyExists, err)
 }
 
 func TestCheckEmailExistNotFound(t *testing.T) {
