@@ -19,7 +19,7 @@ ARG TARGETOS TARGETARCH
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o main .
 
 # Runtime
-FROM --platform=$TARGETPLATFORM scratch AS runtime
+FROM scratch AS runtime
 
 WORKDIR /app
 
@@ -29,6 +29,6 @@ COPY --from=builder /etc/group /etc/group
 
 USER nonroot:nonroot
 
-EXPOSE 8080
+EXPOSE 80
 
 CMD ["./main"]

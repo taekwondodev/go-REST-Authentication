@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"backend/errors"
+	customerrors "backend/customErrors"
 	"backend/models"
 	"database/sql"
 
@@ -26,13 +26,27 @@ func NewUserRepository(db *sql.DB) UserRepository {
 func (r *UserRepositoryImpl) CheckUsernameExist(username string) error {
 	var exists bool
 	query := "SELECT EXISTS(SELECT 1 FROM users WHERE username=$1)"
-	return r.db.QueryRow(query, username).Scan(&exists)
+	err := r.db.QueryRow(query, username).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return customerrors.ErrUserAlreadyExists
+	}
+	return nil
 }
 
 func (r *UserRepositoryImpl) CheckEmailExist(email string) error {
 	var exists bool
 	query := "SELECT EXISTS(SELECT 1 FROM users WHERE email=$1)"
-	return r.db.QueryRow(query, email).Scan(&exists)
+	err := r.db.QueryRow(query, email).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return customerrors.ErrEmailAlreadyExists
+	}
+	return nil
 }
 
 func (r *UserRepositoryImpl) SaveUser(username string, password string, email string) error {
@@ -71,7 +85,7 @@ func (r *UserRepositoryImpl) GetUserByCredentials(username string, password stri
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errors.ErrUserNotFound
+			return nil, customerrors.ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -79,7 +93,7 @@ func (r *UserRepositoryImpl) GetUserByCredentials(username string, password stri
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
 		if err == bcrypt.ErrMismatchedHashAndPassword {
-			return nil, errors.ErrInvalidCredentials
+			return nil, customerrors.ErrInvalidCredentials
 		}
 		return nil, err
 	}
