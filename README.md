@@ -5,7 +5,7 @@ Auth Microservice/Template for REST API in Go with JWT, Docker, PostgreSQL and E
 
 ## API Endpoints
 
-[![Open in Swagger Editor](https://img.shields.io/badge/Swagger-Editor-%23Clojure?style=for-the-badge&logo=swagger)](https://editor.swagger.io/?url=https://raw.githubusercontent.com/taekwondodev/go-REST-Authentication/backend/api/openapi.yaml)
+[![Open in Swagger Editor](https://img.shields.io/badge/Swagger-Editor-%23Clojure?style=for-the-badge&logo=swagger)](https://editor.swagger.io/?url=https://raw.githubusercontent.com/taekwondodev/go-REST-Authentication/master/backend/api/openapi.yaml)
 
 - [Raw OpenAPI Spec](./backend/api/openapi.yaml)
 
