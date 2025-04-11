@@ -6,8 +6,10 @@ import (
 	"backend/dto"
 	"backend/models"
 	"backend/service"
+	"fmt"
 	"testing"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -38,8 +40,8 @@ func (m *MockUserRepository) GetUserByCredentials(username string, password stri
 	return args.Get(0).(*models.User), args.Error(1)
 }
 
-func (m *MockToken) GenerateJWT(username string, email string) (string, string, error) {
-	args := m.Called(username, email)
+func (m *MockToken) GenerateJWT(username string, email string, id string) (string, string, error) {
+	args := m.Called(username, email, id)
 	return args.String(0), args.String(1), args.Error(2)
 }
 
@@ -168,12 +170,13 @@ func TestAuthServiceLoginCorrect(t *testing.T) {
 	}
 
 	mockUser := &models.User{
+		ID:       1,
 		Username: "testuser",
 		Email:    emailString,
 	}
 
 	mockRepo.On("GetUserByCredentials", req.Username, req.Password).Return(mockUser, nil)
-	mockToken.On("GenerateJWT", mockUser.Username, mockUser.Email).Return("mockAccessToken", "mockRefreshToken", nil)
+	mockToken.On("GenerateJWT", mockUser.Username, mockUser.Email, fmt.Sprintf("%d", mockUser.ID)).Return("mockAccessToken", "mockRefreshToken", nil)
 
 	res, err := authService.Login(req)
 
@@ -232,12 +235,13 @@ func TestAuthServiceLoginJWTError(t *testing.T) {
 	}
 
 	mockUser := &models.User{
+		ID:       1,
 		Username: "fail",
 		Email:    emailString,
 	}
 
 	mockRepo.On("GetUserByCredentials", req.Username, req.Password).Return(mockUser, nil)
-	mockToken.On("GenerateJWT", mockUser.Username, mockUser.Email).Return("", "", assert.AnError)
+	mockToken.On("GenerateJWT", mockUser.Username, mockUser.Email, fmt.Sprintf("%d", mockUser.ID)).Return("", "", assert.AnError)
 
 	res, err := authService.Login(req)
 
@@ -259,8 +263,14 @@ func TestAuthServiceRefreshCorrect(t *testing.T) {
 		RefreshToken: "valid-refresh-token",
 	}
 
-	mockToken.On("ValidateJWT", req.RefreshToken).Return(&config.Claims{Username: "testuser", Email: emailString}, nil)
-	mockToken.On("GenerateJWT", "testuser", emailString).Return("mockAccessToken", "", nil)
+	mockClaims := &config.Claims{
+		Username: "testuser",
+		Email:    emailString,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ID: "1",
+		}}
+	mockToken.On("ValidateJWT", req.RefreshToken).Return(mockClaims, nil)
+	mockToken.On("GenerateJWT", "testuser", emailString, "1").Return("mockAccessToken", "", nil)
 
 	res, err := authService.Refresh(req)
 
@@ -313,8 +323,15 @@ func TestAuthServiceRefreshErrorGenerate(t *testing.T) {
 		RefreshToken: "invalid-refresh-token",
 	}
 
-	mockToken.On("ValidateJWT", req.RefreshToken).Return(&config.Claims{Username: "testuser", Email: emailString}, nil)
-	mockToken.On("GenerateJWT", "testuser", emailString).Return("", "", assert.AnError)
+	mockClaims := &config.Claims{
+		Username: "testuser",
+		Email:    emailString,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ID: "1",
+		}}
+
+	mockToken.On("ValidateJWT", req.RefreshToken).Return(mockClaims, nil)
+	mockToken.On("GenerateJWT", "testuser", emailString, "1").Return("", "", assert.AnError)
 
 	res, err := authService.Refresh(req)
 
