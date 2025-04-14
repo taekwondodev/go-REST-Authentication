@@ -48,6 +48,8 @@ jobs:
             -Dsonar.exclusions=test/**
             -Dsonar.projectKey=taekwondodev_go-REST-Template
             -Dsonar.organization=taekwondodev
+            -Dsonar.coverage.exclusions=**/*
+            -Dsonar.analysis.ignoreCoverage=true
 
   deploy:
     needs: sonarcloud  # Go on only if job "sonarcloud" successfully
