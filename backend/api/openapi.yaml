@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Auth Microservice API
-  version: 1.0.5
+  version: 1.0.6
 
 servers:
   - url: http://localhost:80
@@ -182,10 +182,14 @@ components:
         email:
           type: string
           format: email
+        role:
+          type: string
+          description: "User role, default is 'user'"
       example:
         username: "johndoe"
         password: "securepassword123"
         email: "john@example.com"
+        role: "user"
 
     RefreshTokenRequest:
       type: object
