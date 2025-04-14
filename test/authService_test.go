@@ -6,7 +6,6 @@ import (
 	"backend/dto"
 	"backend/models"
 	"backend/service"
-	"fmt"
 	"testing"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -55,310 +54,336 @@ func (m *MockToken) ValidateJWT(tokenString string) (*config.Claims, error) {
 
 /*******************************************************************************/
 
-func TestAuthServiceRegisterCorrect(t *testing.T) {
+func setupAuthService() (*MockUserRepository, *MockToken, service.AuthService) {
 	mockRepo := new(MockUserRepository)
 	mockToken := new(MockToken)
 	authService := service.NewAuthService(mockRepo, mockToken)
-
-	req := dto.AuthRequest{
-		Username: "testuser",
-		Password: "password123",
-		Email:    emailString,
-	}
-
-	mockRepo.On("CheckUserExists", req.Username, req.Email).Return(nil)
-	mockRepo.On("SaveUser", req.Username, req.Password, req.Email, req.Role).Return(nil)
-
-	res, err := authService.Register(req)
-
-	assert.NoError(t, err)
-	assert.Equal(t, "Sign-Up successfully!", res.Message)
-	mockRepo.AssertExpectations(t)
+	return mockRepo, mockToken, authService
 }
 
-func TestAuthServiceRegisterWithRoleCorrect(t *testing.T) {
-	mockRepo := new(MockUserRepository)
-	mockToken := new(MockToken)
-	authService := service.NewAuthService(mockRepo, mockToken)
-
-	req := dto.AuthRequest{
-		Username: "testuser",
-		Password: "password123",
-		Email:    emailString,
-		Role:     "admin",
-	}
-
-	mockRepo.On("CheckUserExists", req.Username, req.Email).Return(nil)
-	mockRepo.On("SaveUser", req.Username, req.Password, req.Email, req.Role).Return(nil)
-
-	res, err := authService.Register(req)
-
-	assert.NoError(t, err)
-	assert.Equal(t, "Sign-Up successfully!", res.Message)
-	mockRepo.AssertExpectations(t)
+type registerServiceTestCase struct {
+	name           string
+	request        dto.AuthRequest
+	mockSetup      func(*MockUserRepository)
+	expectedResult *dto.AuthResponse
+	expectedError  error
 }
 
-func TestAuthServiceRegisterInvalidRequest(t *testing.T) {
-	mockRepo := new(MockUserRepository)
-	mockToken := new(MockToken)
-	authService := service.NewAuthService(mockRepo, mockToken)
-
-	req := dto.AuthRequest{
-		Username: "",
-		Password: "",
-		Email:    "",
+func TestAuthServiceRegister(t *testing.T) {
+	testCases := []registerServiceTestCase{
+		{
+			name: "RegisterSuccessful",
+			request: dto.AuthRequest{
+				Username: "testuser",
+				Password: "password123",
+				Email:    emailString,
+			},
+			mockSetup: func(mockRepo *MockUserRepository) {
+				mockRepo.On("CheckUserExists", "testuser", emailString).Return(nil)
+				mockRepo.On("SaveUser", "testuser", "password123", emailString, "").Return(nil)
+			},
+			expectedResult: &dto.AuthResponse{Message: "Sign-Up successfully!"},
+			expectedError:  nil,
+		},
+		{
+			name: "RegisterWithRoleSuccessful",
+			request: dto.AuthRequest{
+				Username: "testuser",
+				Password: "password123",
+				Email:    emailString,
+				Role:     "admin",
+			},
+			mockSetup: func(mockRepo *MockUserRepository) {
+				mockRepo.On("CheckUserExists", "testuser", emailString).Return(nil)
+				mockRepo.On("SaveUser", "testuser", "password123", emailString, "admin").Return(nil)
+			},
+			expectedResult: &dto.AuthResponse{Message: "Sign-Up successfully!"},
+			expectedError:  nil,
+		},
+		{
+			name: "InvalidRequest",
+			request: dto.AuthRequest{
+				Username: "",
+				Password: "",
+				Email:    "",
+			},
+			mockSetup: func(mockRepo *MockUserRepository) {
+				// No mock setup needed
+			},
+			expectedResult: nil,
+			expectedError:  customerrors.ErrBadRequest,
+		},
+		{
+			name: "UsernameAlreadyExists",
+			request: dto.AuthRequest{
+				Username: "existinguser",
+				Password: "password123",
+				Email:    emailString,
+			},
+			mockSetup: func(mockRepo *MockUserRepository) {
+				mockRepo.On("CheckUserExists", "existinguser", emailString).
+					Return(customerrors.ErrUsernameAlreadyExists)
+			},
+			expectedResult: nil,
+			expectedError:  customerrors.ErrUsernameAlreadyExists,
+		},
+		{
+			name: "EmailAlreadyExists",
+			request: dto.AuthRequest{
+				Username: "existinguser",
+				Password: "password123",
+				Email:    emailString,
+			},
+			mockSetup: func(mockRepo *MockUserRepository) {
+				mockRepo.On("CheckUserExists", "existinguser", emailString).
+					Return(customerrors.ErrEmailAlreadyExists)
+			},
+			expectedResult: nil,
+			expectedError:  customerrors.ErrEmailAlreadyExists,
+		},
+		{
+			name: "SaveUserError",
+			request: dto.AuthRequest{
+				Username: "newuser",
+				Password: "password123",
+				Email:    emailString,
+			},
+			mockSetup: func(mockRepo *MockUserRepository) {
+				mockRepo.On("CheckUserExists", "newuser", emailString).Return(nil)
+				mockRepo.On("SaveUser", "newuser", "password123", emailString, "").
+					Return(assert.AnError)
+			},
+			expectedResult: nil,
+			expectedError:  assert.AnError,
+		},
 	}
 
-	res, err := authService.Register(req)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockRepo, _, authService := setupAuthService()
+			tc.mockSetup(mockRepo)
 
-	assert.Nil(t, res)
-	assert.Error(t, err)
+			res, err := authService.Register(tc.request)
+
+			if tc.expectedError != nil {
+				assert.Error(t, err)
+				if tc.expectedError != assert.AnError {
+					assert.Equal(t, tc.expectedError.Error(), err.Error())
+				}
+				assert.Nil(t, res)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.expectedResult.Message, res.Message)
+			}
+			mockRepo.AssertExpectations(t)
+		})
+	}
 }
 
-func TestAuthServiceRegisterUserAlreadyExists(t *testing.T) {
-	mockRepo := new(MockUserRepository)
-	mockToken := new(MockToken)
-	authService := service.NewAuthService(mockRepo, mockToken)
-
-	req := dto.AuthRequest{
-		Username: "existinguser",
-		Password: "password123",
-		Email:    emailString,
-	}
-
-	mockRepo.On("CheckUserExists", req.Username, req.Email).Return(customerrors.ErrUsernameAlreadyExists)
-
-	res, err := authService.Register(req)
-
-	assert.Nil(t, res)
-	assert.Error(t, err)
-	assert.Equal(t, customerrors.ErrUsernameAlreadyExists.Error(), err.Error())
-	mockRepo.AssertExpectations(t)
+type loginServiceTestCase struct {
+	name           string
+	request        dto.AuthRequest
+	mockSetup      func(*MockUserRepository, *MockToken)
+	expectedResult *dto.AuthResponse
+	expectedError  error
 }
 
-func TestAuthServiceRegisterEmailAlreadyExists(t *testing.T) {
-	mockRepo := new(MockUserRepository)
-	mockToken := new(MockToken)
-	authService := service.NewAuthService(mockRepo, mockToken)
-
-	req := dto.AuthRequest{
-		Username: "existinguser",
-		Password: "password123",
-		Email:    emailString,
+func TestAuthServiceLogin(t *testing.T) {
+	testCases := []loginServiceTestCase{
+		{
+			name: "LoginSuccessful",
+			request: dto.AuthRequest{
+				Username: "testuser",
+				Password: "password123",
+			},
+			mockSetup: func(mockRepo *MockUserRepository, mockToken *MockToken) {
+				mockUser := &models.User{
+					ID:       1,
+					Username: "testuser",
+					Email:    emailString,
+					Role:     "user",
+				}
+				mockRepo.On("GetUserByCredentials", "testuser", "password123").Return(mockUser, nil)
+				mockToken.On("GenerateJWT", mockUser.Username, mockUser.Email, "1", mockUser.Role).
+					Return("mockAccessToken", "mockRefreshToken", nil)
+			},
+			expectedResult: &dto.AuthResponse{
+				Message:      "Sign-In successfully!",
+				AccessToken:  "mockAccessToken",
+				RefreshToken: "mockRefreshToken",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "InvalidRequest",
+			request: dto.AuthRequest{
+				Username: "",
+				Password: "",
+			},
+			mockSetup: func(mockRepo *MockUserRepository, mockToken *MockToken) {
+				// No mock setup needed
+			},
+			expectedResult: nil,
+			expectedError:  customerrors.ErrBadRequest,
+		},
+		{
+			name: "UserNotFound",
+			request: dto.AuthRequest{
+				Username: "nonexistent",
+				Password: "password123",
+			},
+			mockSetup: func(mockRepo *MockUserRepository, mockToken *MockToken) {
+				mockRepo.On("GetUserByCredentials", "nonexistent", "password123").
+					Return(nil, customerrors.ErrUserNotFound)
+			},
+			expectedResult: nil,
+			expectedError:  customerrors.ErrUserNotFound,
+		},
+		{
+			name: "JWTGenerationError",
+			request: dto.AuthRequest{
+				Username: "testuser",
+				Password: "password123",
+			},
+			mockSetup: func(mockRepo *MockUserRepository, mockToken *MockToken) {
+				mockUser := &models.User{
+					ID:       1,
+					Username: "testuser",
+					Email:    emailString,
+					Role:     "user",
+				}
+				mockRepo.On("GetUserByCredentials", "testuser", "password123").Return(mockUser, nil)
+				mockToken.On("GenerateJWT", mockUser.Username, mockUser.Email, "1", mockUser.Role).
+					Return("", "", assert.AnError)
+			},
+			expectedResult: nil,
+			expectedError:  assert.AnError,
+		},
 	}
 
-	mockRepo.On("CheckUserExists", req.Username, req.Email).Return(customerrors.ErrEmailAlreadyExists)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockRepo, mockToken, authService := setupAuthService()
+			tc.mockSetup(mockRepo, mockToken)
 
-	res, err := authService.Register(req)
+			res, err := authService.Login(tc.request)
 
-	assert.Nil(t, res)
-	assert.Error(t, err)
-	assert.Equal(t, customerrors.ErrEmailAlreadyExists.Error(), err.Error())
-	mockRepo.AssertExpectations(t)
+			if tc.expectedError != nil {
+				assert.Error(t, err)
+				if tc.expectedError != assert.AnError {
+					assert.Equal(t, tc.expectedError.Error(), err.Error())
+				}
+				assert.Nil(t, res)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.expectedResult.Message, res.Message)
+				assert.Equal(t, tc.expectedResult.AccessToken, res.AccessToken)
+				assert.Equal(t, tc.expectedResult.RefreshToken, res.RefreshToken)
+			}
+			mockRepo.AssertExpectations(t)
+			mockToken.AssertExpectations(t)
+		})
+	}
 }
 
-func TestAuthServiceRegisterSaveUserError(t *testing.T) {
-	mockRepo := new(MockUserRepository)
-	mockToken := new(MockToken)
-	authService := service.NewAuthService(mockRepo, mockToken)
-
-	req := dto.AuthRequest{
-		Username: "newuser",
-		Password: "password123",
-		Email:    emailString,
-	}
-
-	mockRepo.On("CheckUserExists", req.Username, req.Email).Return(nil)
-	mockRepo.On("SaveUser", req.Username, req.Password, req.Email, req.Role).Return(assert.AnError)
-
-	res, err := authService.Register(req)
-
-	assert.Nil(t, res)
-	assert.Error(t, err)
-	assert.Equal(t, assert.AnError, err)
-	mockRepo.AssertExpectations(t)
+type refreshTokenServiceTestCase struct {
+	name           string
+	request        dto.RefreshTokenRequest
+	mockSetup      func(*MockToken)
+	expectedResult *dto.AuthResponse
+	expectedError  error
 }
 
-/*******************************************************************************/
-
-func TestAuthServiceLoginCorrect(t *testing.T) {
-	mockRepo := new(MockUserRepository)
-	mockToken := new(MockToken)
-	authService := service.NewAuthService(mockRepo, mockToken)
-
-	req := dto.AuthRequest{
-		Username: "testuser",
-		Password: "password123",
+func TestAuthServiceRefresh(t *testing.T) {
+	testCases := []refreshTokenServiceTestCase{
+		{
+			name: "RefreshSuccessful",
+			request: dto.RefreshTokenRequest{
+				RefreshToken: "valid-refresh-token",
+			},
+			mockSetup: func(mockToken *MockToken) {
+				mockClaims := &config.Claims{
+					Username: "testuser",
+					Email:    emailString,
+					Role:     "user",
+					RegisteredClaims: jwt.RegisteredClaims{
+						ID: "1",
+					},
+				}
+				mockToken.On("ValidateJWT", "valid-refresh-token").Return(mockClaims, nil)
+				mockToken.On("GenerateJWT", "testuser", emailString, "1", "user").
+					Return("mockAccessToken", "", nil)
+			},
+			expectedResult: &dto.AuthResponse{
+				Message:     "Update token successfully!",
+				AccessToken: "mockAccessToken",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "InvalidRequest",
+			request: dto.RefreshTokenRequest{
+				RefreshToken: "",
+			},
+			mockSetup: func(mockToken *MockToken) {
+				// No mock setup needed
+			},
+			expectedResult: nil,
+			expectedError:  customerrors.ErrBadRequest,
+		},
+		{
+			name: "InvalidToken",
+			request: dto.RefreshTokenRequest{
+				RefreshToken: "invalid-token",
+			},
+			mockSetup: func(mockToken *MockToken) {
+				mockToken.On("ValidateJWT", "invalid-token").Return(nil, assert.AnError)
+			},
+			expectedResult: nil,
+			expectedError:  assert.AnError,
+		},
+		{
+			name: "JWTGenerationError",
+			request: dto.RefreshTokenRequest{
+				RefreshToken: "valid-but-error",
+			},
+			mockSetup: func(mockToken *MockToken) {
+				mockClaims := &config.Claims{
+					Username: "testuser",
+					Email:    emailString,
+					Role:     "user",
+					RegisteredClaims: jwt.RegisteredClaims{
+						ID: "1",
+					},
+				}
+				mockToken.On("ValidateJWT", "valid-but-error").Return(mockClaims, nil)
+				mockToken.On("GenerateJWT", "testuser", emailString, "1", "user").
+					Return("", "", assert.AnError)
+			},
+			expectedResult: nil,
+			expectedError:  assert.AnError,
+		},
 	}
 
-	mockUser := &models.User{
-		ID:       1,
-		Username: "testuser",
-		Email:    emailString,
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, mockToken, authService := setupAuthService()
+			tc.mockSetup(mockToken)
+
+			res, err := authService.Refresh(tc.request)
+
+			if tc.expectedError != nil {
+				assert.Error(t, err)
+				if tc.expectedError != assert.AnError {
+					assert.Equal(t, tc.expectedError.Error(), err.Error())
+				}
+				assert.Nil(t, res)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.expectedResult.Message, res.Message)
+				assert.Equal(t, tc.expectedResult.AccessToken, res.AccessToken)
+			}
+			mockToken.AssertExpectations(t)
+		})
 	}
-
-	mockRepo.On("GetUserByCredentials", req.Username, req.Password).Return(mockUser, nil)
-	mockToken.On("GenerateJWT", mockUser.Username, mockUser.Email, fmt.Sprintf("%d", mockUser.ID), mockUser.Role).Return("mockAccessToken", "mockRefreshToken", nil)
-
-	res, err := authService.Login(req)
-
-	assert.NoError(t, err)
-	assert.Equal(t, "Sign-In successfully!", res.Message)
-	assert.Equal(t, "mockAccessToken", res.AccessToken)
-	assert.Equal(t, "mockRefreshToken", res.RefreshToken)
-	mockRepo.AssertExpectations(t)
-	mockToken.AssertExpectations(t)
-}
-
-func TestAuthServiceLoginInvalidRequest(t *testing.T) {
-	mockRepo := new(MockUserRepository)
-	mockToken := new(MockToken)
-	authService := service.NewAuthService(mockRepo, mockToken)
-
-	req := dto.AuthRequest{
-		Username: "",
-		Password: "",
-	}
-
-	res, err := authService.Login(req)
-
-	assert.Nil(t, res)
-	assert.Error(t, err)
-}
-
-func TestAuthServiceLoginUserNotExists(t *testing.T) {
-	mockRepo := new(MockUserRepository)
-	mockToken := new(MockToken)
-	authService := service.NewAuthService(mockRepo, mockToken)
-
-	req := dto.AuthRequest{
-		Username: "existinguser",
-		Password: "password123",
-	}
-
-	mockRepo.On("GetUserByCredentials", req.Username, req.Password).Return(nil, assert.AnError)
-
-	res, err := authService.Login(req)
-
-	assert.Nil(t, res)
-	assert.Error(t, err)
-	assert.Equal(t, assert.AnError, err)
-	mockRepo.AssertExpectations(t)
-}
-
-func TestAuthServiceLoginJWTError(t *testing.T) {
-	mockRepo := new(MockUserRepository)
-	mockToken := new(MockToken)
-	authService := service.NewAuthService(mockRepo, mockToken)
-
-	req := dto.AuthRequest{
-		Username: "fail",
-		Password: "password123",
-	}
-
-	mockUser := &models.User{
-		ID:       1,
-		Username: "fail",
-		Email:    emailString,
-	}
-
-	mockRepo.On("GetUserByCredentials", req.Username, req.Password).Return(mockUser, nil)
-	mockToken.On("GenerateJWT", mockUser.Username, mockUser.Email, fmt.Sprintf("%d", mockUser.ID), mockUser.Role).Return("", "", assert.AnError)
-
-	res, err := authService.Login(req)
-
-	assert.Nil(t, res)
-	assert.Error(t, err)
-	assert.Equal(t, assert.AnError, err)
-	mockRepo.AssertExpectations(t)
-	mockToken.AssertExpectations(t)
-}
-
-/*******************************************************************************/
-
-func TestAuthServiceRefreshCorrect(t *testing.T) {
-	mockRepo := new(MockUserRepository)
-	mockToken := new(MockToken)
-	authService := service.NewAuthService(mockRepo, mockToken)
-
-	req := dto.RefreshTokenRequest{
-		RefreshToken: "valid-refresh-token",
-	}
-
-	mockClaims := &config.Claims{
-		Username: "testuser",
-		Email:    emailString,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ID: "1",
-		}}
-	mockToken.On("ValidateJWT", req.RefreshToken).Return(mockClaims, nil)
-	mockToken.On("GenerateJWT", "testuser", emailString, "1", mockClaims.Role).Return("mockAccessToken", "", nil)
-
-	res, err := authService.Refresh(req)
-
-	assert.NoError(t, err)
-	assert.Equal(t, "Update token successfully!", res.Message)
-	assert.Equal(t, "mockAccessToken", res.AccessToken)
-	mockToken.AssertExpectations(t)
-}
-
-func TestAuthServiceRefreshInvalidRequest(t *testing.T) {
-	mockRepo := new(MockUserRepository)
-	mockToken := new(MockToken)
-	authService := service.NewAuthService(mockRepo, mockToken)
-
-	req := dto.RefreshTokenRequest{
-		RefreshToken: "",
-	}
-
-	res, err := authService.Refresh(req)
-
-	assert.Nil(t, res)
-	assert.Error(t, err)
-}
-
-func TestAuthServiceRefreshInvalidToken(t *testing.T) {
-	mockRepo := new(MockUserRepository)
-	mockToken := new(MockToken)
-	authService := service.NewAuthService(mockRepo, mockToken)
-
-	req := dto.RefreshTokenRequest{
-		RefreshToken: "invalid",
-	}
-
-	mockToken.On("ValidateJWT", req.RefreshToken).Return(nil, assert.AnError)
-
-	res, err := authService.Refresh(req)
-
-	assert.Nil(t, res)
-	assert.Error(t, err)
-	assert.Equal(t, assert.AnError, err)
-	mockToken.AssertExpectations(t)
-}
-
-func TestAuthServiceRefreshErrorGenerate(t *testing.T) {
-	mockRepo := new(MockUserRepository)
-	mockToken := new(MockToken)
-	authService := service.NewAuthService(mockRepo, mockToken)
-
-	req := dto.RefreshTokenRequest{
-		RefreshToken: "invalid-refresh-token",
-	}
-
-	mockClaims := &config.Claims{
-		Username: "testuser",
-		Email:    emailString,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ID: "1",
-		}}
-
-	mockToken.On("ValidateJWT", req.RefreshToken).Return(mockClaims, nil)
-	mockToken.On("GenerateJWT", "testuser", emailString, "1", mockClaims.Role).Return("", "", assert.AnError)
-
-	res, err := authService.Refresh(req)
-
-	assert.Nil(t, res)
-	assert.Error(t, err)
-	assert.Equal(t, assert.AnError, err)
-	mockToken.AssertExpectations(t)
 }

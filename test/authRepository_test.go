@@ -11,245 +11,177 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-const existQuery = "SELECT EXISTS"
-const selectUserQuery = "SELECT id, username, email, password_hash, role, created_at, updated_at, is_active FROM users WHERE username = \\$1"
-const emailString = "example@domain.com"
-const date = "2023-01-01"
+const (
+	existQuery      = "SELECT EXISTS"
+	selectUserQuery = "SELECT id, username, email, password_hash, role, created_at, updated_at, is_active FROM users WHERE username = \\$1"
+	emailString     = "example@domain.com"
+	date            = "2023-01-01"
+	defaultRole     = "user"
+)
 
-func TestCheckUserExistsUsernameExists(t *testing.T) {
-	db, mock, _ := sqlmock.New()
-	defer db.Close()
-
-	repo := repository.NewUserRepository(db)
-
-	username := "existinguser"
-	email := "newemail@example.com"
-	rows := sqlmock.NewRows([]string{"username_exists", "email_exists"}).AddRow(true, false)
-	mock.ExpectQuery(existQuery).WithArgs(username, email).WillReturnRows(rows)
-
-	err := repo.CheckUserExists(username, email)
-	assert.Error(t, err)
-	assert.Equal(t, customerrors.ErrUsernameAlreadyExists, err)
-}
-
-func TestCheckUserExistsEmailExists(t *testing.T) {
-	db, mock, _ := sqlmock.New()
-	defer db.Close()
-
-	repo := repository.NewUserRepository(db)
-
-	username := "newuser"
-	email := "existingemail@example.com"
-	rows := sqlmock.NewRows([]string{"username_exists", "email_exists"}).AddRow(false, true)
-	mock.ExpectQuery(existQuery).WithArgs(username, email).WillReturnRows(rows)
-
-	err := repo.CheckUserExists(username, email)
-	assert.Error(t, err)
-	assert.Equal(t, customerrors.ErrEmailAlreadyExists, err)
-}
-
-func TestCheckUserExistsBothExist(t *testing.T) {
-	db, mock, _ := sqlmock.New()
-	defer db.Close()
-
-	repo := repository.NewUserRepository(db)
-
-	username := "existinguser"
-	email := "existingemail@example.com"
-	rows := sqlmock.NewRows([]string{"username_exists", "email_exists"}).AddRow(true, true)
-	mock.ExpectQuery(existQuery).WithArgs(username, email).WillReturnRows(rows)
-
-	err := repo.CheckUserExists(username, email)
-	assert.Error(t, err)
-	assert.Equal(t, customerrors.ErrUsernameAlreadyExists, err) // Username error takes precedence
-}
-
-func TestCheckUserExistsNoneExist(t *testing.T) {
-	db, mock, _ := sqlmock.New()
-	defer db.Close()
-
-	repo := repository.NewUserRepository(db)
-
-	username := "newuser"
-	email := "newemail@example.com"
-	rows := sqlmock.NewRows([]string{"username_exists", "email_exists"}).AddRow(false, false)
-	mock.ExpectQuery(existQuery).WithArgs(username, email).WillReturnRows(rows)
-
-	err := repo.CheckUserExists(username, email)
+// Test setup helper
+func setupMockRepo(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository.UserRepository) {
+	db, mock, err := sqlmock.New()
 	assert.NoError(t, err)
+	repo := repository.NewUserRepository(db)
+	return db, mock, repo
 }
 
-func TestCheckUserExistsDbError(t *testing.T) {
-	db, mock, _ := sqlmock.New()
+// Helper for CheckUserExists scenarios
+func testCheckUserExists(t *testing.T, usernameExists, emailExists bool, expectedErr error) {
+	db, mock, repo := setupMockRepo(t)
 	defer db.Close()
-
-	repo := repository.NewUserRepository(db)
 
 	username := "testuser"
 	email := "testemail@example.com"
-	mock.ExpectQuery(existQuery).WithArgs(username, email).WillReturnError(sql.ErrConnDone)
+
+	if expectedErr == sql.ErrConnDone {
+		mock.ExpectQuery(existQuery).WithArgs(username, email).WillReturnError(sql.ErrConnDone)
+	} else {
+		rows := sqlmock.NewRows([]string{"username_exists", "email_exists"}).AddRow(usernameExists, emailExists)
+		mock.ExpectQuery(existQuery).WithArgs(username, email).WillReturnRows(rows)
+	}
 
 	err := repo.CheckUserExists(username, email)
-	assert.Error(t, err)
+
+	if expectedErr != nil {
+		assert.Error(t, err)
+		if expectedErr != sql.ErrConnDone {
+			assert.Equal(t, expectedErr, err)
+		}
+	} else {
+		assert.NoError(t, err)
+	}
 }
 
-/****************************************************************/
+func TestCheckUserExistsScenarios(t *testing.T) {
+	testCases := []struct {
+		name           string
+		usernameExists bool
+		emailExists    bool
+		expectedErr    error
+	}{
+		{"UsernameExists", true, false, customerrors.ErrUsernameAlreadyExists},
+		{"EmailExists", false, true, customerrors.ErrEmailAlreadyExists},
+		{"BothExist", true, true, customerrors.ErrUsernameAlreadyExists}, // Username error takes precedence
+		{"NoneExist", false, false, nil},
+	}
 
-func TestSaveUserCorrect(t *testing.T) {
-	db, mock, _ := sqlmock.New()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			testCheckUserExists(t, tc.usernameExists, tc.emailExists, tc.expectedErr)
+		})
+	}
+}
+
+func TestCheckUserExistsDbError(t *testing.T) {
+	testCheckUserExists(t, false, false, sql.ErrConnDone)
+}
+
+// Helper for SaveUser scenarios
+func testSaveUser(t *testing.T, role string, shouldError bool) {
+	db, mock, repo := setupMockRepo(t)
 	defer db.Close()
-
-	repo := repository.NewUserRepository(db)
 
 	username := "testuser"
 	password := "password123"
-	mock.ExpectExec("INSERT INTO users \\(username, email, password_hash, role\\) VALUES \\(\\$1, \\$2, \\$3, \\$4\\)").
-		WithArgs(username, emailString, sqlmock.AnyArg(), "").
-		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	err := repo.SaveUser(username, password, emailString, "")
-	assert.NoError(t, err)
-}
-
-func TestSaveUserWithRoleCorrect(t *testing.T) {
-	db, mock, _ := sqlmock.New()
-	defer db.Close()
-
-	repo := repository.NewUserRepository(db)
-
-	username := "testuser"
-	password := "password123"
-	role := "admin"
-	mock.ExpectExec("INSERT INTO users \\(username, email, password_hash, role\\) VALUES \\(\\$1, \\$2, \\$3, \\$4\\)").
-		WithArgs(username, emailString, sqlmock.AnyArg(), role).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+	if shouldError {
+		mock.ExpectExec("INSERT INTO users").
+			WithArgs(username, emailString, sqlmock.AnyArg(), role).
+			WillReturnError(sql.ErrConnDone)
+	} else {
+		mock.ExpectExec("INSERT INTO users \\(username, email, password_hash, role\\) VALUES \\(\\$1, \\$2, \\$3, \\$4\\)").
+			WithArgs(username, emailString, sqlmock.AnyArg(), role).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+	}
 
 	err := repo.SaveUser(username, password, emailString, role)
-	assert.NoError(t, err)
+
+	if shouldError {
+		assert.Error(t, err)
+	} else {
+		assert.NoError(t, err)
+	}
 }
 
-func TestSaveUserDbError(t *testing.T) {
-	db, mock, _ := sqlmock.New()
-	defer db.Close()
+func TestSaveUserScenarios(t *testing.T) {
+	testCases := []struct {
+		name        string
+		role        string
+		shouldError bool
+	}{
+		{"EmptyRole", "", false},
+		{"WithRole", "admin", false},
+		{"DbError", "", true},
+	}
 
-	repo := repository.NewUserRepository(db)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			testSaveUser(t, tc.role, tc.shouldError)
+		})
+	}
+}
+
+// Helper for GetUserByCredentials scenarios
+func testGetUserByCredentials(t *testing.T, role string, wrongPassword bool, dbError error) {
+	db, mock, repo := setupMockRepo(t)
+	defer db.Close()
 
 	username := "testuser"
 	password := "password123"
-	mock.ExpectExec("INSERT INTO users").
-		WithArgs(username, password, emailString).
-		WillReturnError(sql.ErrConnDone)
+	usePassword := password
 
-	err := repo.SaveUser(username, password, emailString, "")
-	assert.Error(t, err)
-}
+	if wrongPassword {
+		usePassword = "wrongpassword"
+	}
 
-/****************************************************************/
-
-func TestGetUserByCredentialsCorrect(t *testing.T) {
-	db, mock, _ := sqlmock.New()
-	defer db.Close()
-
-	repo := repository.NewUserRepository(db)
-
-	username := "testuser"
-	password := "password123"
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	columns := []string{"id", "username", "email", "password_hash", "role", "created_at", "updated_at", "is_active"}
 
-	mock.ExpectQuery(selectUserQuery).
-		WithArgs(username).
-		WillReturnRows(
-			sqlmock.NewRows(columns).
-				AddRow(1, username, emailString, string(hashedPassword), "user", date, date, true),
-		)
+	if dbError != nil {
+		mock.ExpectQuery(selectUserQuery).
+			WithArgs(username).
+			WillReturnError(dbError)
+	} else {
+		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		mock.ExpectQuery(selectUserQuery).
+			WithArgs(username).
+			WillReturnRows(
+				sqlmock.NewRows(columns).
+					AddRow(1, username, emailString, string(hashedPassword), role, date, date, true),
+			)
+	}
 
-	user, err := repo.GetUserByCredentials(username, password)
-	assert.NoError(t, err)
-	assert.NotNil(t, user)
-	assert.Equal(t, username, user.Username)
+	user, err := repo.GetUserByCredentials(username, usePassword)
+
+	if dbError != nil || wrongPassword {
+		assert.Error(t, err)
+		assert.Nil(t, user)
+	} else {
+		assert.NoError(t, err)
+		assert.NotNil(t, user)
+		assert.Equal(t, username, user.Username)
+		assert.Equal(t, role, user.Role)
+	}
 }
 
-func TestGetUserByCredentialsWithRoleCorrect(t *testing.T) {
-	db, mock, _ := sqlmock.New()
-	defer db.Close()
+func TestGetUserByCredentialsScenarios(t *testing.T) {
+	testCases := []struct {
+		name          string
+		role          string
+		wrongPassword bool
+		dbError       error
+	}{
+		{"CorrectCredentials", defaultRole, false, nil},
+		{"AdminRole", "admin", false, nil},
+		{"IncorrectPassword", defaultRole, true, nil},
+		{"UserNotFound", defaultRole, false, sql.ErrNoRows},
+		{"DbError", defaultRole, false, sql.ErrConnDone},
+	}
 
-	repo := repository.NewUserRepository(db)
-
-	username := "testuser"
-	password := "password123"
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	columns := []string{"id", "username", "email", "password_hash", "role", "created_at", "updated_at", "is_active"}
-
-	mock.ExpectQuery(selectUserQuery).
-		WithArgs(username).
-		WillReturnRows(
-			sqlmock.NewRows(columns).
-				AddRow(1, username, emailString, string(hashedPassword), "admin", date, date, true),
-		)
-
-	user, err := repo.GetUserByCredentials(username, password)
-	assert.NoError(t, err)
-	assert.NotNil(t, user)
-	assert.Equal(t, username, user.Username)
-}
-
-func TestGetUserByCredentialsIncorrectPassword(t *testing.T) {
-	db, mock, _ := sqlmock.New()
-	defer db.Close()
-
-	repo := repository.NewUserRepository(db)
-
-	username := "testuser"
-	password := "password123"
-	wrongPassword := "wrongpassword"
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	columns := []string{"id", "username", "email", "password_hash", "role", "created_at", "updated_at", "is_active"}
-
-	mock.ExpectQuery(selectUserQuery).
-		WithArgs(username).
-		WillReturnRows(
-			sqlmock.NewRows(columns).
-				AddRow(1, username, emailString, string(hashedPassword), "user", date, date, true),
-		)
-
-	user, err := repo.GetUserByCredentials(username, wrongPassword)
-	assert.Error(t, err)
-	assert.Nil(t, user)
-}
-
-func TestGetUserByCredentialsUserNotFound(t *testing.T) {
-	db, mock, _ := sqlmock.New()
-	defer db.Close()
-
-	repo := repository.NewUserRepository(db)
-
-	username := "nonexistentuser"
-	password := "password123"
-
-	mock.ExpectQuery(selectUserQuery).
-		WithArgs(username).
-		WillReturnError(sql.ErrNoRows)
-
-	user, err := repo.GetUserByCredentials(username, password)
-	assert.Error(t, err)
-	assert.Nil(t, user)
-}
-
-func TestGetUserByCredentialsExistDbError(t *testing.T) {
-	db, mock, _ := sqlmock.New()
-	defer db.Close()
-
-	repo := repository.NewUserRepository(db)
-
-	username := "testuser"
-	password := "password123"
-
-	mock.ExpectQuery(selectUserQuery).
-		WithArgs(username).
-		WillReturnError(sql.ErrConnDone)
-
-	user, err := repo.GetUserByCredentials(username, password)
-	assert.Error(t, err)
-	assert.Nil(t, user)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			testGetUserByCredentials(t, tc.role, tc.wrongPassword, tc.dbError)
+		})
+	}
 }
