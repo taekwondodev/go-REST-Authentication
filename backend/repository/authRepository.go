@@ -9,9 +9,9 @@ import (
 )
 
 type UserRepository interface {
-	CheckUserExists(username string, email string) error
-	SaveUser(username string, password string, email string) error
-	GetUserByCredentials(username string, password string) (*models.User, error)
+	CheckUserExists(username, email string) error
+	SaveUser(username, password, email, role string) error
+	GetUserByCredentials(username, password string) (*models.User, error)
 }
 
 type UserRepositoryImpl struct {
@@ -22,7 +22,7 @@ func NewUserRepository(db *sql.DB) UserRepository {
 	return &UserRepositoryImpl{db: db}
 }
 
-func (r *UserRepositoryImpl) CheckUserExists(username string, email string) error {
+func (r *UserRepositoryImpl) CheckUserExists(username, email string) error {
 	query := `
         SELECT 
             EXISTS(SELECT 1 FROM users WHERE username = $1) AS username_exists,
@@ -44,27 +44,28 @@ func (r *UserRepositoryImpl) CheckUserExists(username string, email string) erro
 	}
 }
 
-func (r *UserRepositoryImpl) SaveUser(username string, password string, email string) error {
+func (r *UserRepositoryImpl) SaveUser(username, password, email, role string) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
 
-	query := "INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3)"
+	query := "INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, $4)"
 
 	_, err = r.db.Exec(
 		query,
 		username,
 		email,
 		string(hashedPassword),
+		role,
 	)
 	return err
 }
 
-func (r *UserRepositoryImpl) GetUserByCredentials(username string, password string) (*models.User, error) {
+func (r *UserRepositoryImpl) GetUserByCredentials(username, password string) (*models.User, error) {
 	var user models.User
 	query := `
-        SELECT id, username, email, password_hash, created_at, updated_at, is_active
+        SELECT id, username, email, password_hash, role, created_at, updated_at, is_active
         FROM users
         WHERE username = $1
     `
@@ -74,6 +75,7 @@ func (r *UserRepositoryImpl) GetUserByCredentials(username string, password stri
 		&user.Username,
 		&user.Email,
 		&user.PasswordHash,
+		&user.Role,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 		&user.IsActive,

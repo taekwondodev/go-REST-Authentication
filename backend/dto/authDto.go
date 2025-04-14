@@ -6,6 +6,7 @@ type AuthRequest struct {
 	Username string `json:"username" validate:"required"`
 	Password string `json:"password" validate:"required,min=8"`
 	Email    string `json:"email" validate:"omitzero,email"`
+	Role     string `json:"role" validate:"omitzero"`
 }
 
 func (a *AuthRequest) Validate() error {

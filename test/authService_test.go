@@ -22,17 +22,17 @@ type MockToken struct {
 	mock.Mock
 }
 
-func (m *MockUserRepository) CheckUserExists(username string, email string) error {
+func (m *MockUserRepository) CheckUserExists(username, email string) error {
 	args := m.Called(username, email)
 	return args.Error(0)
 }
 
-func (m *MockUserRepository) SaveUser(username string, password string, email string) error {
-	args := m.Called(username, password, email)
+func (m *MockUserRepository) SaveUser(username, password, email, role string) error {
+	args := m.Called(username, password, email, role)
 	return args.Error(0)
 }
 
-func (m *MockUserRepository) GetUserByCredentials(username string, password string) (*models.User, error) {
+func (m *MockUserRepository) GetUserByCredentials(username, password string) (*models.User, error) {
 	args := m.Called(username, password)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -40,8 +40,8 @@ func (m *MockUserRepository) GetUserByCredentials(username string, password stri
 	return args.Get(0).(*models.User), args.Error(1)
 }
 
-func (m *MockToken) GenerateJWT(username string, email string, id string) (string, string, error) {
-	args := m.Called(username, email, id)
+func (m *MockToken) GenerateJWT(username, email, id, role string) (string, string, error) {
+	args := m.Called(username, email, id, role)
 	return args.String(0), args.String(1), args.Error(2)
 }
 
@@ -67,7 +67,29 @@ func TestAuthServiceRegisterCorrect(t *testing.T) {
 	}
 
 	mockRepo.On("CheckUserExists", req.Username, req.Email).Return(nil)
-	mockRepo.On("SaveUser", req.Username, req.Password, req.Email).Return(nil)
+	mockRepo.On("SaveUser", req.Username, req.Password, req.Email, req.Role).Return(nil)
+
+	res, err := authService.Register(req)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "Sign-Up successfully!", res.Message)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestAuthServiceRegisterWithRoleCorrect(t *testing.T) {
+	mockRepo := new(MockUserRepository)
+	mockToken := new(MockToken)
+	authService := service.NewAuthService(mockRepo, mockToken)
+
+	req := dto.AuthRequest{
+		Username: "testuser",
+		Password: "password123",
+		Email:    emailString,
+		Role:     "admin",
+	}
+
+	mockRepo.On("CheckUserExists", req.Username, req.Email).Return(nil)
+	mockRepo.On("SaveUser", req.Username, req.Password, req.Email, req.Role).Return(nil)
 
 	res, err := authService.Register(req)
 
@@ -147,7 +169,7 @@ func TestAuthServiceRegisterSaveUserError(t *testing.T) {
 	}
 
 	mockRepo.On("CheckUserExists", req.Username, req.Email).Return(nil)
-	mockRepo.On("SaveUser", req.Username, req.Password, req.Email).Return(assert.AnError)
+	mockRepo.On("SaveUser", req.Username, req.Password, req.Email, req.Role).Return(assert.AnError)
 
 	res, err := authService.Register(req)
 
@@ -176,7 +198,7 @@ func TestAuthServiceLoginCorrect(t *testing.T) {
 	}
 
 	mockRepo.On("GetUserByCredentials", req.Username, req.Password).Return(mockUser, nil)
-	mockToken.On("GenerateJWT", mockUser.Username, mockUser.Email, fmt.Sprintf("%d", mockUser.ID)).Return("mockAccessToken", "mockRefreshToken", nil)
+	mockToken.On("GenerateJWT", mockUser.Username, mockUser.Email, fmt.Sprintf("%d", mockUser.ID), mockUser.Role).Return("mockAccessToken", "mockRefreshToken", nil)
 
 	res, err := authService.Login(req)
 
@@ -241,7 +263,7 @@ func TestAuthServiceLoginJWTError(t *testing.T) {
 	}
 
 	mockRepo.On("GetUserByCredentials", req.Username, req.Password).Return(mockUser, nil)
-	mockToken.On("GenerateJWT", mockUser.Username, mockUser.Email, fmt.Sprintf("%d", mockUser.ID)).Return("", "", assert.AnError)
+	mockToken.On("GenerateJWT", mockUser.Username, mockUser.Email, fmt.Sprintf("%d", mockUser.ID), mockUser.Role).Return("", "", assert.AnError)
 
 	res, err := authService.Login(req)
 
@@ -270,7 +292,7 @@ func TestAuthServiceRefreshCorrect(t *testing.T) {
 			ID: "1",
 		}}
 	mockToken.On("ValidateJWT", req.RefreshToken).Return(mockClaims, nil)
-	mockToken.On("GenerateJWT", "testuser", emailString, "1").Return("mockAccessToken", "", nil)
+	mockToken.On("GenerateJWT", "testuser", emailString, "1", mockClaims.Role).Return("mockAccessToken", "", nil)
 
 	res, err := authService.Refresh(req)
 
@@ -331,7 +353,7 @@ func TestAuthServiceRefreshErrorGenerate(t *testing.T) {
 		}}
 
 	mockToken.On("ValidateJWT", req.RefreshToken).Return(mockClaims, nil)
-	mockToken.On("GenerateJWT", "testuser", emailString, "1").Return("", "", assert.AnError)
+	mockToken.On("GenerateJWT", "testuser", emailString, "1", mockClaims.Role).Return("", "", assert.AnError)
 
 	res, err := authService.Refresh(req)
 

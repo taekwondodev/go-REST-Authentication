@@ -36,7 +36,7 @@ func (s *AuthServiceImpl) Register(req dto.AuthRequest) (*dto.AuthResponse, erro
 		return nil, err
 	}
 
-	if err := s.repo.SaveUser(req.Username, req.Password, req.Email); err != nil {
+	if err := s.repo.SaveUser(req.Username, req.Password, req.Email, req.Role); err != nil {
 		return nil, err
 	}
 
@@ -53,7 +53,7 @@ func (s *AuthServiceImpl) Login(req dto.AuthRequest) (*dto.AuthResponse, error) 
 		return nil, err
 	}
 
-	accessToken, refreshToken, err := s.jwt.GenerateJWT(user.Username, user.Email, fmt.Sprintf("%d", user.ID))
+	accessToken, refreshToken, err := s.jwt.GenerateJWT(user.Username, user.Email, fmt.Sprintf("%d", user.ID), user.Role)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func (s *AuthServiceImpl) Refresh(req dto.RefreshTokenRequest) (*dto.AuthRespons
 		return nil, err
 	}
 
-	accessToken, _, err := s.jwt.GenerateJWT(claims.Username, claims.Email, claims.ID)
+	accessToken, _, err := s.jwt.GenerateJWT(claims.Username, claims.Email, claims.ID, claims.Role)
 	if err != nil {
 		return nil, err
 	}

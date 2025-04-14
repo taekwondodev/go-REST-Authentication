@@ -12,7 +12,7 @@ import (
 )
 
 const existQuery = "SELECT EXISTS"
-const selectUserQuery = "SELECT id, username, email, password_hash, created_at, updated_at, is_active FROM users WHERE username = \\$1"
+const selectUserQuery = "SELECT id, username, email, password_hash, role, created_at, updated_at, is_active FROM users WHERE username = \\$1"
 const emailString = "example@domain.com"
 const date = "2023-01-01"
 
@@ -103,11 +103,28 @@ func TestSaveUserCorrect(t *testing.T) {
 
 	username := "testuser"
 	password := "password123"
-	mock.ExpectExec("INSERT INTO users \\(username, email, password_hash\\) VALUES \\(\\$1, \\$2, \\$3\\)").
-		WithArgs(username, emailString, sqlmock.AnyArg()).
+	mock.ExpectExec("INSERT INTO users \\(username, email, password_hash, role\\) VALUES \\(\\$1, \\$2, \\$3, \\$4\\)").
+		WithArgs(username, emailString, sqlmock.AnyArg(), "").
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	err := repo.SaveUser(username, password, emailString)
+	err := repo.SaveUser(username, password, emailString, "")
+	assert.NoError(t, err)
+}
+
+func TestSaveUserWithRoleCorrect(t *testing.T) {
+	db, mock, _ := sqlmock.New()
+	defer db.Close()
+
+	repo := repository.NewUserRepository(db)
+
+	username := "testuser"
+	password := "password123"
+	role := "admin"
+	mock.ExpectExec("INSERT INTO users \\(username, email, password_hash, role\\) VALUES \\(\\$1, \\$2, \\$3, \\$4\\)").
+		WithArgs(username, emailString, sqlmock.AnyArg(), role).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	err := repo.SaveUser(username, password, emailString, role)
 	assert.NoError(t, err)
 }
 
@@ -119,9 +136,11 @@ func TestSaveUserDbError(t *testing.T) {
 
 	username := "testuser"
 	password := "password123"
-	mock.ExpectExec("INSERT INTO users").WithArgs(username, password, emailString).WillReturnError(sql.ErrConnDone)
+	mock.ExpectExec("INSERT INTO users").
+		WithArgs(username, password, emailString).
+		WillReturnError(sql.ErrConnDone)
 
-	err := repo.SaveUser(username, password, emailString)
+	err := repo.SaveUser(username, password, emailString, "")
 	assert.Error(t, err)
 }
 
@@ -136,13 +155,37 @@ func TestGetUserByCredentialsCorrect(t *testing.T) {
 	username := "testuser"
 	password := "password123"
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	columns := []string{"id", "username", "email", "password_hash", "created_at", "updated_at", "is_active"}
+	columns := []string{"id", "username", "email", "password_hash", "role", "created_at", "updated_at", "is_active"}
 
 	mock.ExpectQuery(selectUserQuery).
 		WithArgs(username).
 		WillReturnRows(
 			sqlmock.NewRows(columns).
-				AddRow(1, username, emailString, string(hashedPassword), date, date, true),
+				AddRow(1, username, emailString, string(hashedPassword), "user", date, date, true),
+		)
+
+	user, err := repo.GetUserByCredentials(username, password)
+	assert.NoError(t, err)
+	assert.NotNil(t, user)
+	assert.Equal(t, username, user.Username)
+}
+
+func TestGetUserByCredentialsWithRoleCorrect(t *testing.T) {
+	db, mock, _ := sqlmock.New()
+	defer db.Close()
+
+	repo := repository.NewUserRepository(db)
+
+	username := "testuser"
+	password := "password123"
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	columns := []string{"id", "username", "email", "password_hash", "role", "created_at", "updated_at", "is_active"}
+
+	mock.ExpectQuery(selectUserQuery).
+		WithArgs(username).
+		WillReturnRows(
+			sqlmock.NewRows(columns).
+				AddRow(1, username, emailString, string(hashedPassword), "admin", date, date, true),
 		)
 
 	user, err := repo.GetUserByCredentials(username, password)
@@ -161,13 +204,13 @@ func TestGetUserByCredentialsIncorrectPassword(t *testing.T) {
 	password := "password123"
 	wrongPassword := "wrongpassword"
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	columns := []string{"id", "username", "email", "password_hash", "created_at", "updated_at", "is_active"}
+	columns := []string{"id", "username", "email", "password_hash", "role", "created_at", "updated_at", "is_active"}
 
 	mock.ExpectQuery(selectUserQuery).
 		WithArgs(username).
 		WillReturnRows(
 			sqlmock.NewRows(columns).
-				AddRow(1, username, emailString, string(hashedPassword), date, date, true),
+				AddRow(1, username, emailString, string(hashedPassword), "user", date, date, true),
 		)
 
 	user, err := repo.GetUserByCredentials(username, wrongPassword)
