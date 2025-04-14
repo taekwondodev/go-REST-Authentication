@@ -29,6 +29,26 @@ jobs:
       - name: Run tests
         run: docker run --rm myapp-test
 
+  sonarcloud:
+    needs: test  # Go on only if job "test" successfully
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: >
+            -Dsonar.exclusions=test/**
+            -Dsonar.projectKey=taekwondodev_go-REST-Template
+            -Dsonar.organization=taekwondodev
+
   deploy:
     needs: test  # Go on only if job "test" successfully
     runs-on: ubuntu-latest
