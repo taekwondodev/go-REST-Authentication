@@ -39,7 +39,7 @@ jobs:
           fetch-depth: 0
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -50,7 +50,7 @@ jobs:
             -Dsonar.organization=taekwondodev
 
   deploy:
-    needs: test  # Go on only if job "test" successfully
+    needs: sonarcloud  # Go on only if job "sonarcloud" successfully
     runs-on: ubuntu-latest
     permissions:
       packages: write
