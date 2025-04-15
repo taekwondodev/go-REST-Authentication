@@ -20,7 +20,6 @@ func main() {
 
 	router := api.SetupRoutes(authController)
 	server := api.NewServer(":80", router)
-	if err := server.Start(); err != nil {
-		panic(err)
-	}
+
+	server.StartWithGracefulShutdown()
 }
