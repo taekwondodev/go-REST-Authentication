@@ -1,5 +1,5 @@
 # Use the official Golang image as the base image
-FROM golang:1.24.1
+FROM golang:1.24.2
 
 # Set environment variables for Go build cache
 ENV GOCACHE=/tmp/go-build
