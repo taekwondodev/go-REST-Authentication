@@ -60,7 +60,7 @@ func (c *AuthController) Refresh(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (c *AuthController) HealthCheck(w http.ResponseWriter, r *http.Request) error {
-	res, err := c.authService.HealthCheck()
+	res, err := c.authService.HealthCheck(r.Context())
 	if err != nil {
 		return err
 	}

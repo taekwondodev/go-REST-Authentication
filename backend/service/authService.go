@@ -6,16 +6,15 @@ import (
 	"backend/dto"
 	"backend/repository"
 	"context"
-	"fmt"
-	"strings"
-	"time"
+
+	"github.com/google/uuid"
 )
 
 type AuthService interface {
 	Register(req dto.AuthRequest) (*dto.AuthResponse, error)
 	Login(req dto.AuthRequest) (*dto.AuthResponse, error)
 	Refresh(req dto.RefreshTokenRequest) (*dto.AuthResponse, error)
-	HealthCheck() (*dto.HealthResponse, error)
+	HealthCheck(ctx context.Context) (*dto.HealthResponse, error)
 }
 
 type AuthServiceImpl struct {
@@ -36,11 +35,15 @@ func (s *AuthServiceImpl) Register(req dto.AuthRequest) (*dto.AuthResponse, erro
 		return nil, err
 	}
 
-	if err := s.repo.SaveUser(req.Username, req.Password, req.Email, req.Role); err != nil {
+	sub, err := s.repo.SaveUser(req.Username, req.Password, req.Email, req.Role)
+	if err != nil {
 		return nil, err
 	}
 
-	return &dto.AuthResponse{Message: "Sign-Up successfully!"}, nil
+	return &dto.AuthResponse{
+		Message: "Sign-Up successfully!",
+		Sub:     sub.String(),
+	}, nil
 }
 
 func (s *AuthServiceImpl) Login(req dto.AuthRequest) (*dto.AuthResponse, error) {
@@ -53,7 +56,7 @@ func (s *AuthServiceImpl) Login(req dto.AuthRequest) (*dto.AuthResponse, error) 
 		return nil, err
 	}
 
-	accessToken, refreshToken, err := s.jwt.GenerateJWT(user.Username, user.Email, fmt.Sprintf("%d", user.ID), user.Role)
+	accessToken, refreshToken, err := s.jwt.GenerateJWT(user.Username, user.Email, user.Role, user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +78,7 @@ func (s *AuthServiceImpl) Refresh(req dto.RefreshTokenRequest) (*dto.AuthRespons
 		return nil, err
 	}
 
-	accessToken, _, err := s.jwt.GenerateJWT(claims.Username, claims.Email, claims.ID, claims.Role)
+	accessToken, _, err := s.jwt.GenerateJWT(claims.Username, claims.Email, claims.Role, uuid.MustParse(claims.Subject))
 	if err != nil {
 		return nil, err
 	}
@@ -86,19 +89,9 @@ func (s *AuthServiceImpl) Refresh(req dto.RefreshTokenRequest) (*dto.AuthRespons
 	}, nil
 }
 
-func (s *AuthServiceImpl) HealthCheck() (*dto.HealthResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	if err := config.Db.PingContext(ctx); err != nil {
-		switch {
-		case isSSLerror(err):
-			return nil, customerrors.ErrDbSSLHandshakeFailed
-		case ctx.Err() == context.DeadlineExceeded:
-			return nil, customerrors.ErrDbTimeout
-		default:
-			return nil, customerrors.ErrDbUnreacheable
-		}
+func (s *AuthServiceImpl) HealthCheck(ctx context.Context) (*dto.HealthResponse, error) {
+	if err := s.repo.HealthCheck(ctx); err != nil {
+		return nil, err
 	}
 
 	return &dto.HealthResponse{
@@ -106,10 +99,4 @@ func (s *AuthServiceImpl) HealthCheck() (*dto.HealthResponse, error) {
 		Database: "Connected",
 		SslMode:  "verify-full",
 	}, nil
-}
-
-func isSSLerror(err error) bool {
-	return strings.Contains(err.Error(), "SSL") ||
-		strings.Contains(err.Error(), "certificate") ||
-		strings.Contains(err.Error(), "TLS")
 }

@@ -3,15 +3,19 @@ package repository
 import (
 	customerrors "backend/customErrors"
 	"backend/models"
+	"context"
 	"database/sql"
+	"strings"
 
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserRepository interface {
 	CheckUserExists(username, email string) error
-	SaveUser(username, password, email, role string) error
+	SaveUser(username, password, email, role string) (uuid.UUID, error)
 	GetUserByCredentials(username, password string) (*models.User, error)
+	HealthCheck(ctx context.Context) error
 }
 
 type UserRepositoryImpl struct {
@@ -44,22 +48,27 @@ func (r *UserRepositoryImpl) CheckUserExists(username, email string) error {
 	}
 }
 
-func (r *UserRepositoryImpl) SaveUser(username, password, email, role string) error {
+func (r *UserRepositoryImpl) SaveUser(username, password, email, role string) (uuid.UUID, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return err
+		return uuid.Nil, err
 	}
 
-	query := "INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, $4)"
-
-	_, err = r.db.Exec(
+	query := "INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING sub"
+	var sub uuid.UUID
+	err = r.db.QueryRow(
 		query,
 		username,
 		email,
 		string(hashedPassword),
 		role,
-	)
-	return err
+	).Scan(&sub)
+
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return sub, nil
 }
 
 func (r *UserRepositoryImpl) GetUserByCredentials(username, password string) (*models.User, error) {
@@ -96,4 +105,25 @@ func (r *UserRepositoryImpl) GetUserByCredentials(username, password string) (*m
 	}
 
 	return &user, nil
+}
+
+func (r *UserRepositoryImpl) HealthCheck(ctx context.Context) error {
+	if err := r.db.PingContext(ctx); err != nil {
+		switch {
+		case isSSLerror(err):
+			return customerrors.ErrDbSSLHandshakeFailed
+		case ctx.Err() == context.DeadlineExceeded:
+			return customerrors.ErrDbTimeout
+		default:
+			return customerrors.ErrDbUnreacheable
+		}
+	}
+
+	return nil
+}
+
+func isSSLerror(err error) bool {
+	return strings.Contains(err.Error(), "SSL") ||
+		strings.Contains(err.Error(), "certificate") ||
+		strings.Contains(err.Error(), "TLS")
 }

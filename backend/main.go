@@ -9,13 +9,12 @@ import (
 )
 
 func main() {
-	config.LoadEnv()
+	db := config.NewPostgres()
+	db.InitDB()
+	defer db.CloseDB()
 
-	config.InitDB()
-	defer config.CloseDB()
-
-	authRepo := repository.NewUserRepository(config.Db)
-	authService := service.NewAuthService(authRepo, &config.JWT{})
+	authRepo := repository.NewUserRepository(db.Db)
+	authService := service.NewAuthService(authRepo, config.NewJWT())
 	authController := controller.NewAuthController(authService)
 
 	router := api.SetupRoutes(authController)
