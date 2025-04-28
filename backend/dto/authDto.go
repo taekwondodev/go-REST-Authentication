@@ -16,7 +16,7 @@ func (a *AuthRequest) Validate() error {
 
 type AuthResponse struct {
 	Message      string `json:"message"`
-	Sub          string `json:"sub"`
+	Sub          string `json:"sub,omitzero"`
 	AccessToken  string `json:"accessToken,omitzero"`
 	RefreshToken string `json:"refreshToken,omitzero"`
 }

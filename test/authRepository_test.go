@@ -136,6 +136,7 @@ func testGetUserByCredentials(t *testing.T, role string, wrongPassword bool, dbE
 	username := "testuser"
 	password := "password123"
 	usePassword := password
+	mockUUID := uuid.New()
 
 	if wrongPassword {
 		usePassword = "wrongpassword"
@@ -153,7 +154,7 @@ func testGetUserByCredentials(t *testing.T, role string, wrongPassword bool, dbE
 			WithArgs(username).
 			WillReturnRows(
 				sqlmock.NewRows(columns).
-					AddRow(1, username, emailString, string(hashedPassword), role, date, date, true),
+					AddRow(mockUUID, username, emailString, string(hashedPassword), role, date, date, true),
 			)
 	}
 
@@ -167,6 +168,7 @@ func testGetUserByCredentials(t *testing.T, role string, wrongPassword bool, dbE
 		assert.NotNil(t, user)
 		assert.Equal(t, username, user.Username)
 		assert.Equal(t, role, user.Role)
+		assert.Equal(t, mockUUID, user.ID)
 	}
 }
 

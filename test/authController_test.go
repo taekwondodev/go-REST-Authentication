@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -89,6 +90,8 @@ type registerControllerTestCase struct {
 }
 
 func TestAuthControllerRegister(t *testing.T) {
+	mockUUID := uuid.New().String()
+
 	validRequest := dto.AuthRequest{
 		Username: "testuser",
 		Password: "testpassword",
@@ -101,10 +104,13 @@ func TestAuthControllerRegister(t *testing.T) {
 			requestBody: validRequest,
 			mockSetup: func(mockService *MockAuthService) {
 				mockService.On("Register", validRequest).
-					Return(&dto.AuthResponse{Message: "Sign-Up successfully!"}, nil)
+					Return(&dto.AuthResponse{
+						Message: "Sign-Up successfully!",
+						Sub:     mockUUID,
+					}, nil)
 			},
 			expectedStatus: http.StatusCreated,
-			expectedBody:   `{"message":"Sign-Up successfully!"}`,
+			expectedBody:   `{"message":"Sign-Up successfully!","sub":"` + mockUUID + `"}`,
 		},
 		{
 			name:        "UsernameAlreadyExists",
