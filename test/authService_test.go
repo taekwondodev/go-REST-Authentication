@@ -6,9 +6,11 @@ import (
 	"backend/dto"
 	"backend/models"
 	"backend/service"
+	"context"
 	"testing"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -26,9 +28,9 @@ func (m *MockUserRepository) CheckUserExists(username, email string) error {
 	return args.Error(0)
 }
 
-func (m *MockUserRepository) SaveUser(username, password, email, role string) error {
+func (m *MockUserRepository) SaveUser(username, password, email, role string) (uuid.UUID, error) {
 	args := m.Called(username, password, email, role)
-	return args.Error(0)
+	return args.Get(0).(uuid.UUID), args.Error(1)
 }
 
 func (m *MockUserRepository) GetUserByCredentials(username, password string) (*models.User, error) {
@@ -39,8 +41,13 @@ func (m *MockUserRepository) GetUserByCredentials(username, password string) (*m
 	return args.Get(0).(*models.User), args.Error(1)
 }
 
-func (m *MockToken) GenerateJWT(username, email, id, role string) (string, string, error) {
-	args := m.Called(username, email, id, role)
+func (m *MockUserRepository) HealthCheck(ctx context.Context) error {
+	args := m.Called(ctx)
+	return args.Error(0)
+}
+
+func (m *MockToken) GenerateJWT(username, email, role string, sub uuid.UUID) (string, string, error) {
+	args := m.Called(username, email, role, sub)
 	return args.String(0), args.String(1), args.Error(2)
 }
 
@@ -70,6 +77,8 @@ type registerServiceTestCase struct {
 }
 
 func TestAuthServiceRegister(t *testing.T) {
+	mockUUID := uuid.New()
+
 	testCases := []registerServiceTestCase{
 		{
 			name: "RegisterSuccessful",
@@ -80,10 +89,14 @@ func TestAuthServiceRegister(t *testing.T) {
 			},
 			mockSetup: func(mockRepo *MockUserRepository) {
 				mockRepo.On("CheckUserExists", "testuser", emailString).Return(nil)
-				mockRepo.On("SaveUser", "testuser", "password123", emailString, "").Return(nil)
+				mockRepo.On("SaveUser", "testuser", "password123", emailString, "").
+					Return(mockUUID, nil)
 			},
-			expectedResult: &dto.AuthResponse{Message: "Sign-Up successfully!"},
-			expectedError:  nil,
+			expectedResult: &dto.AuthResponse{
+				Message: "Sign-Up successfully!",
+				Sub:     mockUUID.String(),
+			},
+			expectedError: nil,
 		},
 		{
 			name: "RegisterWithRoleSuccessful",
@@ -95,10 +108,14 @@ func TestAuthServiceRegister(t *testing.T) {
 			},
 			mockSetup: func(mockRepo *MockUserRepository) {
 				mockRepo.On("CheckUserExists", "testuser", emailString).Return(nil)
-				mockRepo.On("SaveUser", "testuser", "password123", emailString, "admin").Return(nil)
+				mockRepo.On("SaveUser", "testuser", "password123", emailString, "admin").
+					Return(mockUUID, nil)
 			},
-			expectedResult: &dto.AuthResponse{Message: "Sign-Up successfully!"},
-			expectedError:  nil,
+			expectedResult: &dto.AuthResponse{
+				Message: "Sign-Up successfully!",
+				Sub:     mockUUID.String(),
+			},
+			expectedError: nil,
 		},
 		{
 			name: "InvalidRequest",
@@ -151,7 +168,7 @@ func TestAuthServiceRegister(t *testing.T) {
 			mockSetup: func(mockRepo *MockUserRepository) {
 				mockRepo.On("CheckUserExists", "newuser", emailString).Return(nil)
 				mockRepo.On("SaveUser", "newuser", "password123", emailString, "").
-					Return(assert.AnError)
+					Return(uuid.Nil, assert.AnError)
 			},
 			expectedResult: nil,
 			expectedError:  assert.AnError,
@@ -174,6 +191,7 @@ func TestAuthServiceRegister(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tc.expectedResult.Message, res.Message)
+				assert.Equal(t, tc.expectedResult.Sub, res.Sub)
 			}
 			mockRepo.AssertExpectations(t)
 		})
@@ -189,6 +207,8 @@ type loginServiceTestCase struct {
 }
 
 func TestAuthServiceLogin(t *testing.T) {
+	userUUID := uuid.New()
+
 	testCases := []loginServiceTestCase{
 		{
 			name: "LoginSuccessful",
@@ -198,13 +218,13 @@ func TestAuthServiceLogin(t *testing.T) {
 			},
 			mockSetup: func(mockRepo *MockUserRepository, mockToken *MockToken) {
 				mockUser := &models.User{
-					ID:       1,
+					ID:       userUUID,
 					Username: "testuser",
 					Email:    emailString,
 					Role:     "user",
 				}
 				mockRepo.On("GetUserByCredentials", "testuser", "password123").Return(mockUser, nil)
-				mockToken.On("GenerateJWT", mockUser.Username, mockUser.Email, "1", mockUser.Role).
+				mockToken.On("GenerateJWT", mockUser.Username, mockUser.Email, mockUser.Role, mockUser.ID).
 					Return("mockAccessToken", "mockRefreshToken", nil)
 			},
 			expectedResult: &dto.AuthResponse{
@@ -247,13 +267,13 @@ func TestAuthServiceLogin(t *testing.T) {
 			},
 			mockSetup: func(mockRepo *MockUserRepository, mockToken *MockToken) {
 				mockUser := &models.User{
-					ID:       1,
+					ID:       userUUID,
 					Username: "testuser",
 					Email:    emailString,
 					Role:     "user",
 				}
 				mockRepo.On("GetUserByCredentials", "testuser", "password123").Return(mockUser, nil)
-				mockToken.On("GenerateJWT", mockUser.Username, mockUser.Email, "1", mockUser.Role).
+				mockToken.On("GenerateJWT", mockUser.Username, mockUser.Email, mockUser.Role, mockUser.ID).
 					Return("", "", assert.AnError)
 			},
 			expectedResult: nil,
@@ -295,6 +315,8 @@ type refreshTokenServiceTestCase struct {
 }
 
 func TestAuthServiceRefresh(t *testing.T) {
+	claimsSub := uuid.New().String()
+
 	testCases := []refreshTokenServiceTestCase{
 		{
 			name: "RefreshSuccessful",
@@ -307,11 +329,11 @@ func TestAuthServiceRefresh(t *testing.T) {
 					Email:    emailString,
 					Role:     "user",
 					RegisteredClaims: jwt.RegisteredClaims{
-						ID: "1",
+						Subject: claimsSub,
 					},
 				}
 				mockToken.On("ValidateJWT", "valid-refresh-token").Return(mockClaims, nil)
-				mockToken.On("GenerateJWT", "testuser", emailString, "1", "user").
+				mockToken.On("GenerateJWT", "testuser", emailString, "user", uuid.MustParse(claimsSub)).
 					Return("mockAccessToken", "", nil)
 			},
 			expectedResult: &dto.AuthResponse{
@@ -353,11 +375,11 @@ func TestAuthServiceRefresh(t *testing.T) {
 					Email:    emailString,
 					Role:     "user",
 					RegisteredClaims: jwt.RegisteredClaims{
-						ID: "1",
+						Subject: claimsSub,
 					},
 				}
 				mockToken.On("ValidateJWT", "valid-but-error").Return(mockClaims, nil)
-				mockToken.On("GenerateJWT", "testuser", emailString, "1", "user").
+				mockToken.On("GenerateJWT", "testuser", emailString, "user", uuid.MustParse(claimsSub)).
 					Return("", "", assert.AnError)
 			},
 			expectedResult: nil,

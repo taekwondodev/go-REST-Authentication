@@ -54,7 +54,7 @@ func (r *UserRepositoryImpl) SaveUser(username, password, email, role string) (u
 		return uuid.Nil, err
 	}
 
-	query := "INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING sub"
+	query := "INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id"
 	var sub uuid.UUID
 	err = r.db.QueryRow(
 		query,

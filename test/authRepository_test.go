@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -85,23 +86,27 @@ func testSaveUser(t *testing.T, role string, shouldError bool) {
 
 	username := "testuser"
 	password := "password123"
+	expectedUUID := uuid.New()
 
 	if shouldError {
 		mock.ExpectExec("INSERT INTO users").
 			WithArgs(username, emailString, sqlmock.AnyArg(), role).
 			WillReturnError(sql.ErrConnDone)
 	} else {
-		mock.ExpectExec("INSERT INTO users \\(username, email, password_hash, role\\) VALUES \\(\\$1, \\$2, \\$3, \\$4\\)").
+		rows := sqlmock.NewRows([]string{"id"}).AddRow(expectedUUID)
+		mock.ExpectQuery("INSERT INTO users \\(username, email, password_hash, role\\) VALUES \\(\\$1, \\$2, \\$3, \\$4\\) RETURNING id").
 			WithArgs(username, emailString, sqlmock.AnyArg(), role).
-			WillReturnResult(sqlmock.NewResult(1, 1))
+			WillReturnRows(rows)
 	}
 
-	err := repo.SaveUser(username, password, emailString, role)
+	sub, err := repo.SaveUser(username, password, emailString, role)
 
 	if shouldError {
 		assert.Error(t, err)
+		assert.Equal(t, uuid.Nil, sub)
 	} else {
 		assert.NoError(t, err)
+		assert.Equal(t, expectedUUID, sub)
 	}
 }
 

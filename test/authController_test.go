@@ -6,6 +6,7 @@ import (
 	"backend/dto"
 	"backend/middleware"
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -52,8 +53,8 @@ func (m *MockAuthService) Refresh(req dto.RefreshTokenRequest) (*dto.AuthRespons
 	return args.Get(0).(*dto.AuthResponse), args.Error(1)
 }
 
-func (m *MockAuthService) HealthCheck() (*dto.HealthResponse, error) {
-	args := m.Called()
+func (m *MockAuthService) HealthCheck(ctx context.Context) (*dto.HealthResponse, error) {
+	args := m.Called(ctx)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -356,11 +357,11 @@ func TestAuthControllerRefreshToken(t *testing.T) {
 func TestAuthControllerHealth(t *testing.T) {
 	mockService, authController := setupAuthController()
 
-	mockService.On("HealthCheck").
+	mockService.On("HealthCheck", mock.Anything).
 		Return(&dto.HealthResponse{
 			Status:   "OK",
-			Database: "",
-			SslMode:  "",
+			Database: "Connected",
+			SslMode:  "verify-full",
 		}, nil)
 
 	w := httptest.NewRecorder()
@@ -370,6 +371,6 @@ func TestAuthControllerHealth(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.JSONEq(t, `{"status":"OK", "database":"", "ssl_mode":""}`, w.Body.String())
+	assert.JSONEq(t, `{"status":"OK", "database":"Connected", "ssl_mode":"verify-full"}`, w.Body.String())
 	mockService.AssertExpectations(t)
 }

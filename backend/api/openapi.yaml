@@ -28,6 +28,7 @@ paths:
                 $ref: "#/components/schemas/AuthResponse"
               example:
                 message: "Sign-Up successfully!"
+                sub: "123e457-e89b-12d3-a456-426614174000"
         400:
           description: bad request
           content:
@@ -206,6 +207,9 @@ components:
       properties:
         message:
           type: string
+        sub:
+          type: string
+          format: uuid
         accessToken:
           type: string
         refreshToken:
