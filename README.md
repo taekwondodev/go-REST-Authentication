@@ -9,7 +9,7 @@
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![SonarCloud](https://img.shields.io/badge/SonarCloud-F3702A?logo=sonarcloud&logoColor=white)](https://sonarcloud.io/)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/taekwondodev/go-REST-Authentication/docker-publish.yml?branch=master&logo=github)](https://github.com/taekwondodev/go-REST-Authentication/actions)
-[![GitHub Release](https://img.shields.io/github/v/release/taekwondodev/go-REST-Authentication?logo=github)](https://github.com/taekwondodev/go-REST-Authentication/releases)
+[![GitHub Tag](https://img.shields.io/github/v/tag/taekwondodev/go-REST-Authentication?logo=github&label=Latest%20Tag)](https://github.com/taekwondodev/go-REST-Authentication/tags)
 
 Auth Microservice/Template for REST API in Go with JWT, Docker, PostgreSQL and End-to-End TLS Encryption
 
