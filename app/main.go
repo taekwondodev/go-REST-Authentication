@@ -1,11 +1,11 @@
 package main
 
 import (
-	"backend/api"
-	"backend/config"
-	"backend/controller"
-	"backend/repository"
-	"backend/service"
+	"github.com/taekwondodev/go-REST-Authentication/api"
+	"github.com/taekwondodev/go-REST-Authentication/config"
+	"github.com/taekwondodev/go-REST-Authentication/controller"
+	"github.com/taekwondodev/go-REST-Authentication/repository"
+	"github.com/taekwondodev/go-REST-Authentication/service"
 )
 
 func main() {

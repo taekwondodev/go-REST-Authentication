@@ -1,11 +1,12 @@
 package controller
 
 import (
-	customerrors "backend/customErrors"
-	"backend/dto"
-	"backend/service"
 	"encoding/json"
 	"net/http"
+
+	customerrors "github.com/taekwondodev/go-REST-Authentication/customErrors"
+	"github.com/taekwondodev/go-REST-Authentication/dto"
+	"github.com/taekwondodev/go-REST-Authentication/service"
 )
 
 type AuthController struct {

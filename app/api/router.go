@@ -1,9 +1,10 @@
 package api
 
 import (
-	"backend/controller"
-	"backend/middleware"
 	"net/http"
+
+	"github.com/taekwondodev/go-REST-Authentication/controller"
+	"github.com/taekwondodev/go-REST-Authentication/middleware"
 )
 
 var router *http.ServeMux

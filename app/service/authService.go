@@ -1,13 +1,13 @@
 package service
 
 import (
-	"backend/config"
-	customerrors "backend/customErrors"
-	"backend/dto"
-	"backend/repository"
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/taekwondodev/go-REST-Authentication/config"
+	customerrors "github.com/taekwondodev/go-REST-Authentication/customErrors"
+	"github.com/taekwondodev/go-REST-Authentication/dto"
+	"github.com/taekwondodev/go-REST-Authentication/repository"
 )
 
 type AuthService interface {

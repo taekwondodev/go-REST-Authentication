@@ -1,9 +1,10 @@
 package middleware
 
 import (
-	customerrors "backend/customErrors"
 	"encoding/json"
 	"net/http"
+
+	customerrors "github.com/taekwondodev/go-REST-Authentication/customErrors"
 )
 
 type HandlerFunc func(w http.ResponseWriter, r *http.Request) error

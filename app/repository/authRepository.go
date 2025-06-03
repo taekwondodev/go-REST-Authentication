@@ -1,13 +1,13 @@
 package repository
 
 import (
-	customerrors "backend/customErrors"
-	"backend/models"
 	"context"
 	"database/sql"
 	"strings"
 
 	"github.com/google/uuid"
+	customerrors "github.com/taekwondodev/go-REST-Authentication/customErrors"
+	"github.com/taekwondodev/go-REST-Authentication/models"
 	"golang.org/x/crypto/bcrypt"
 )
 

@@ -1,10 +1,11 @@
 package middleware
 
 import (
-	customerrors "backend/customErrors"
 	"log"
 	"net/http"
 	"time"
+
+	customerrors "github.com/taekwondodev/go-REST-Authentication/customErrors"
 )
 
 func LoggingMiddleware(next HandlerFunc) HandlerFunc {
